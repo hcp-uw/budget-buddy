@@ -46,3 +46,24 @@ const PORT = 3001;
 app.listen(PORT, () => {
     console.log(`Server running on port test ${PORT}`);
 });
+
+const { createClient } = require('@supabase/supabase-js');
+
+const supabaseUrl = 'https://rxvorfxtmshzzbdvprxt.supabase.co';
+const supabaseKey = 'sb_publishable_VDInGf_WB3CUxRASkGqNIg_p_Kkjph8';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function testConnection() {
+  const { data, error } = await supabase
+    .from('budgets') // testing if connection works by trying to select from the 'budgets' tabl
+    .select('*')
+    .limit(1);
+
+  if (error) {
+    console.error('❌ Connection failed:', error.message);
+  } else {
+    console.log('✅ Connection successful! Data found:', data);
+  }
+}
+
+testConnection();
