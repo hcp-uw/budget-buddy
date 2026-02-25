@@ -1,69 +1,81 @@
-const express = require("express")
-const cors = require("cors")
+require('dotenv').config({ path: './.env' });
+const express = require("express");
+const cors = require("cors");
+const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid'); // Added Plaid
+const { createClient } = require('@supabase/supabase-js');
 const { unknownEndpoint } = require('./middleware');
 
-// create your express application
 const app = express();
-
-// enable json parsing
 app.use(express.json());
-
-// enable cors
 app.use(cors());
 
-// our 'database'. This is just a simple in-memory store for the images, and
-// will be lost when the server is restarted. In a real application, you would
-// use a database to store the images.
-const images = [];
-
-// test endpoint
-app.get('/message/hello', (req, res) => {
-    res.send(
-        `Attention HCP Project Team! If you see this, your front end and
-        back end are connected. Don't believe me? Upload and image and
-        see for yourself!`
-    )
-})
-
-app.post('/image/upload', (req, res) => {
-    console.log(req.body);
-    const base64ImgData = req.body.image;
-    images.push(base64ImgData);
-    res.status(201).send('Image uploaded');
-})
-
-app.get('/image/featured', (req, res) => {
-    res.send(images);
-})
-
-// error handling
-app.use(unknownEndpoint);
-
-// set port to listen on
-const PORT = 3001;
-
-// start your server
-app.listen(PORT, () => {
-    console.log(`Server running on port test ${PORT}`);
+// --- 1. PLAID CONFIGURATION ---
+const configuration = new Configuration({
+  basePath: PlaidEnvironments[process.env.PLAID_ENV || 'sandbox'],
+  baseOptions: {
+    headers: {
+      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
+      'PLAID-SECRET': process.env.PLAID_SECRET,
+    },
+  },
 });
+const plaidClient = new PlaidApi(configuration);
 
-const { createClient } = require('@supabase/supabase-js');
-
+// --- 2. SUPABASE CONFIGURATION ---
 const supabaseUrl = 'https://rxvorfxtmshzzbdvprxt.supabase.co';
-const supabaseKey = 'sb_publishable_VDInGf_WB3CUxRASkGqNIg_p_Kkjph8';
+const supabaseKey = process.env.SUPABASE_KEY || 'sb_publishable_VDInGf_WB3CUxRASkGqNIg_p_Kkjph8';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function testConnection() {
-  const { data, error } = await supabase
-    .from('budgets') // testing if connection works by trying to select from the 'budgets' tabl
-    .select('*')
-    .limit(1);
-
-  if (error) {
-    console.error('❌ Connection failed:', error.message);
-  } else {
-    console.log('✅ Connection successful! Data found:', data);
+// --- 3. PLAID API ROUTES (The missing piece) ---
+app.post('/api/create_link_token', async (req, res) => {
+  try {
+    const tokenResponse = await plaidClient.linkTokenCreate({
+      user: { client_user_id: 'user_good' },
+      client_name: 'Budget Buddy',
+      products: ['auth', 'transactions'],
+      country_codes: ['US'],
+      language: 'en',
+    });
+    res.json(tokenResponse.data);
+  } catch (error) {
+    console.error("Plaid Error:", error.response?.data || error.message);
+    res.status(500).json(error.response?.data || error.message);
   }
+});
+
+// Used by your App.tsx to check which products are enabled
+app.post('/api/info', (req, res) => {
+  res.json({ products: ['auth', 'transactions'] });
+});
+
+// --- 4. YOUR EXISTING IMAGE LOGIC ---
+const images = [];
+app.get('/message/hello', (req, res) => {
+    res.send(`Attention HCP Project Team! Front and back ends are connected.`);
+});
+
+app.post('/image/upload', (req, res) => {
+    images.push(req.body.image);
+    res.status(201).send('Image uploaded');
+});
+
+// --- 5. STARTUP & DEBUGGING ---
+const PORT = 8000;
+
+async function testConnection() {
+  const { data, error } = await supabase.from('budgets').select('*').limit(1);
+  if (error) console.error('❌ Supabase failed:', error.message);
+  else console.log('✅ Supabase connected!');
 }
 
-testConnection();
+console.log("--- BACKEND ENV CHECK ---");
+console.log("PLAID_CLIENT_ID:", process.env.PLAID_CLIENT_ID ? "LOADED" : "MISSING");
+console.log("PLAID_SECRET:", process.env.PLAID_SECRET ? "LOADED" : "MISSING");
+console.log("--------------------------");
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    testConnection();
+});
+
+app.use(unknownEndpoint);

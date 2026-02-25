@@ -5,11 +5,14 @@ import Products from "./Components/ProductTypes/Products";
 import Items from "./Components/ProductTypes/Items";
 import Context from "./Context";
 
+// --- NEW SOCIAL COMPONENTS ---
+import CreateGroup from "./Components/CreateGroup";
+import JoinGroup from "./Components/JoinGroup";
+
 import styles from "./App.module.scss";
-import { Products as PlaidProducts } from "plaid";
 
 const App = () => {
-  const { linkSuccess, isPaymentInitiation, itemId, dispatch } =
+  const { linkSuccess, isPaymentInitiation, itemId, userId, dispatch } =
     useContext(Context);
 
   const getInfo = useCallback(async () => {
@@ -22,7 +25,6 @@ const App = () => {
     const paymentInitiation: boolean =
       data.products.includes("payment_initiation");
 
-    // CRA products are those that start with "cra_"
     const craProducts = data.products.filter((product: string) =>
       product.startsWith("cra_")
     );
@@ -73,7 +75,6 @@ const App = () => {
 
   const generateToken = useCallback(
     async (isPaymentInitiation: boolean) => {
-      // Link tokens for 'payment_initiation' use a different creation flow in your backend.
       const path = isPaymentInitiation
         ? "/api/create_link_token_for_payment"
         : "/api/create_link_token";
@@ -98,7 +99,6 @@ const App = () => {
         }
         dispatch({ type: "SET_STATE", state: { linkToken: data.link_token } });
       }
-      // Save the link_token to be used later in the Oauth flow.
       localStorage.setItem("link_token", data.link_token);
     },
     [dispatch]
@@ -106,9 +106,7 @@ const App = () => {
 
   useEffect(() => {
     const init = async () => {
-      const { paymentInitiation, isUserTokenFlow } = await getInfo(); // used to determine which path to take when generating token
-      // do not generate a new token for OAuth redirect; instead
-      // setLinkToken from localStorage
+      const { paymentInitiation, isUserTokenFlow } = await getInfo();
       if (window.location.href.includes("?oauth_state_id=")) {
         dispatch({
           type: "SET_STATE",
@@ -131,12 +129,41 @@ const App = () => {
     <div className={styles.App}>
       <div className={styles.container}>
         <Header />
+        
+        {/* Standard Plaid View */}
         {linkSuccess && (
           <>
             <Products />
             {!isPaymentInitiation && itemId && <Items />}
           </>
         )}
+
+        {/* --- SOCIAL FEATURES SECTION --- */}
+        <hr style={{ margin: '40px 0', border: '0', borderTop: '1px solid #eee' }} />
+        
+        <div className={styles.socialSection}>
+          {linkSuccess && userId ? (
+            <>
+              <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', fontWeight: 'bold' }}>
+                🏆 Savings Groups
+              </h2>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+                gap: '20px' 
+              }}>
+                <CreateGroup userId={userId} />
+                <JoinGroup userId={userId} />
+              </div>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+              <p style={{ color: '#888', fontStyle: 'italic' }}>
+                Connect your bank account above to unlock  savings groups!
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
