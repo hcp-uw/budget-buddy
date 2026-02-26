@@ -2,7 +2,9 @@
 
 // read env vars from .env file
 require('dotenv').config();
-const { Configuration, PlaidApi, Products, PlaidEnvironments, CraCheckReportProduct } = require('plaid');
+
+
+const { Configuration, PlaidApi, Products, PlaidEnvironments, CraCheckReportProduct, CreditPayStubPayBasisType } = require('plaid');
 const util = require('util');
 const { v4: uuidv4 } = require('uuid');
 const express = require('express');
