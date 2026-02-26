@@ -55,7 +55,6 @@ app.post('/api/create_link_token', async (req, res) => {
     });
     res.json(tokenResponse.data);
   } catch (error) {
-    // ✅ better error logging
     console.error("Plaid create_link_token error:", JSON.stringify(error.response?.data, null, 2));
     res.status(500).json(error.response?.data || error.message);
   }
@@ -81,8 +80,14 @@ app.post('/api/set_access_token', function (request, response, next) {
       ITEM_ID = tokenResponse.data.item_id;
 
       const { data, error } = await supabase
-        .from('accounts')
-        .insert({ user_id: 'test-user', access_token: ACCESS_TOKEN })
+        .from('plaid_items')
+        .insert({
+          user_id: '4daed9c1-65c8-4348-9951-7d0df4852110',
+          access_token: ACCESS_TOKEN,
+          plaid_item_id: ITEM_ID,
+          institution_name: 'unknown',
+          status: 'connected'
+        })
         .select()
         .single();
 
@@ -92,7 +97,6 @@ app.post('/api/set_access_token', function (request, response, next) {
       response.json({ access_token: ACCESS_TOKEN, item_id: ITEM_ID, error: null });
     })
     .catch((err) => {
-      // ✅ better error logging
       console.error("Plaid set_access_token error:", JSON.stringify(err.response?.data, null, 2));
       next(err);
     });
@@ -161,8 +165,68 @@ app.post('/image/upload', (req, res) => {
   res.status(201).send('Image uploaded');
 });
 
+
+app.post('/api/transactions/sync', async (req, res) => {
+    try {
+      const { data: plaidItem, error: itemError } = await supabase
+        .from('plaid_items')
+        .select('*')
+        .eq('user_id', '4daed9c1-65c8-4348-9951-7d0df4852110')
+        .single();
+
+        if (itemError) {
+          console.error('Error fetching plaid item from Supabase:', itemError);
+          return res.status(500).json({ error: 'Failed to fetch plaid item' });
+        }
+
+        let cursor = plaidItem.cursor || null;
+        let added = [];
+        let hasMore = true;
+
+        while(hasMore) {
+          const syncRequest = await plaidClient.transactionsSync({
+            access_token: plaidItem.access_token,
+            cursor: cursor,
+          });
+
+          added = added.concat(syncRequest.data.added);
+          cursor = syncRequest.data.next_cursor;  
+          hasMore = syncRequest.data.has_more;
+        }
+
+        if (added.length > 0) {
+          await supabase .from('transactions')
+          .upsert(
+            added.map(t => ({
+              user_id: '4daed9c1-65c8-4348-9951-7d0df4852110',
+              plaid_item_id: plaidItem.plaid_item_id,
+              plaid_transaction_id: t.transaction_id,
+              amount: t.amount,
+              date: t.date,
+              merchant_name: t.merchant_name,
+              category: t.personal_finance_category?.primary || 'Other',
+              pending: t.pending
+            })),
+            { onConflict: 'plaid_transaction_id' }
+          )
+        }
+                await supabase
+          .from('plaid_items')
+          .update({ cursor: cursor })
+          .eq('user_id', '4daed9c1-65c8-4348-9951-7d0df4852110');
+
+        console.log(`✅ Synced ${added.length} transactions`);
+        res.json({ synced: added.length });
+
+  } catch (error) {
+    console.error('Sync error:', error.response?.data || error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- STARTUP ---
 const PORT = 8000;
+
 
 async function testConnection() {
   const { data, error } = await supabase.from('budgets').select('*').limit(1);
