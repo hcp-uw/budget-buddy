@@ -1,0 +1,79 @@
+/* src/Components/Groups.css */
+
+.group-card {
+  background: #ffffff;
+  border-radius: 32px;
+  padding: 50px;
+  width: 100%;
+  max-width: 500px; /* Slightly wider for better readability */
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  margin: 20px auto;
+  transition: all 0.4s ease;
+}
+
+.group-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
+}
+
+.groups-header {
+  font-size: 2.2rem; /* Bigger Title */
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 30px;
+  letter-spacing: -1px;
+}
+
+.input-group {
+  margin-bottom: 25px; /* More breathing room */
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  font-size: 1rem; /* Increased from 0.75rem */
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.group-card input {
+  width: 100%;
+  padding: 18px 20px; /* Bigger padding for bigger feel */
+  border: 2px solid #f1f5f9;
+  border-radius: 16px;
+  font-size: 1.1rem; /* Bigger text inside input */
+  background-color: #f8fafc;
+  transition: all 0.2s;
+  box-sizing: border-box;
+  color: #1e293b;
+}
+
+.group-card input:focus {
+  outline: none;
+  border-color: #000;
+  background-color: #fff;
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
+}
+
+.btn-modern-primary {
+  width: 100%;
+  padding: 20px; /* Larger button */
+  background-color: #000;
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 1.1rem; /* Bigger button text */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.btn-modern-primary:hover {
+  background-color: #334155;
+  transform: scale(1.02);
+}

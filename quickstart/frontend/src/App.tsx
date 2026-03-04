@@ -5,10 +5,13 @@ import Products from "./Components/ProductTypes/Products";
 import Items from "./Components/ProductTypes/Items";
 import Context from "./Context";
 
-// --- NEW SOCIAL COMPONENTS ---
+// --- CUSTOM COMPONENTS ---
 import CreateGroup from "./Components/CreateGroup";
 import JoinGroup from "./Components/JoinGroup";
+import MyGroups from "./Components/MyGroups"; 
 
+// --- STYLING ---
+import "./Components/Groups.css"; 
 import styles from "./App.module.scss";
 
 const App = () => {
@@ -55,10 +58,7 @@ const App = () => {
       if (data.error != null) {
         dispatch({
           type: "SET_STATE",
-          state: {
-            linkToken: null,
-            linkTokenError: data.error,
-          },
+          state: { linkToken: null, linkTokenError: data.error },
         });
         return;
       }
@@ -78,9 +78,7 @@ const App = () => {
       const path = isPaymentInitiation
         ? "/api/create_link_token_for_payment"
         : "/api/create_link_token";
-      const response = await fetch(path, {
-        method: "POST",
-      });
+      const response = await fetch(path, { method: "POST" });
       if (!response.ok) {
         dispatch({ type: "SET_STATE", state: { linkToken: null } });
         return;
@@ -90,10 +88,7 @@ const App = () => {
         if (data.error != null) {
           dispatch({
             type: "SET_STATE",
-            state: {
-              linkToken: null,
-              linkTokenError: data.error,
-            },
+            state: { linkToken: null, linkTokenError: data.error },
           });
           return;
         }
@@ -110,9 +105,7 @@ const App = () => {
       if (window.location.href.includes("?oauth_state_id=")) {
         dispatch({
           type: "SET_STATE",
-          state: {
-            linkToken: localStorage.getItem("link_token"),
-          },
+          state: { linkToken: localStorage.getItem("link_token") },
         });
         return;
       }
@@ -130,7 +123,7 @@ const App = () => {
       <div className={styles.container}>
         <Header />
         
-        {/* Standard Plaid View */}
+        {/* Plaid Product Display */}
         {linkSuccess && (
           <>
             <Products />
@@ -138,32 +131,39 @@ const App = () => {
           </>
         )}
 
-        {/* --- SOCIAL FEATURES SECTION --- */}
-        <hr style={{ margin: '40px 0', border: '0', borderTop: '1px solid #eee' }} />
-        
-        <div className={styles.socialSection}>
-          {linkSuccess && userId ? (
-            <>
-              <h2 style={{ fontSize: '1.5rem', marginBottom: '20px', fontWeight: 'bold' }}>
-                🏆 Savings Groups
-              </h2>
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-                gap: '20px' 
-              }}>
-                <CreateGroup userId={userId} />
-                <JoinGroup userId={userId} />
+        {/* --- SAVING CIRCLES DASHBOARD --- */}
+        {/* Section is completely hidden until a bank account is linked */}
+        {linkSuccess && (
+          <div className="modern-dashboard" style={{ marginTop: '80px', paddingTop: '40px', borderTop: '1px solid #f0f0f0' }}>
+            <div className="dashboard-content">
+              <div className="text-center" style={{ textAlign: 'center', marginBottom: '60px' }}>
+                <h2 className="main-title" style={{ fontSize: '3.5rem', fontWeight: '900', marginBottom: '15px', color: '#111' }}>
+                  ⭕ Saving Circles
+                </h2>
+                <p className="subtitle" style={{ fontSize: '1.4rem', color: '#666', fontWeight: '400' }}>
+                  Join a circle, save together, and reach your goals faster.
+                </p>
               </div>
-            </>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-              <p style={{ color: '#888', fontStyle: 'italic' }}>
-                Connect your bank account above to unlock  savings groups!
-              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '60px' }}>
+                {/* Creation & Joining Cards */}
+                <div className="card-grid" style={{ 
+                  display: 'flex', 
+                  gap: '40px', 
+                  justifyContent: 'center', 
+                  flexWrap: 'wrap',
+                  width: '100%' 
+                }}>
+                  <CreateGroup userId={userId || "sandbox-user-99"} />
+                  <JoinGroup userId={userId || "sandbox-user-99"} />
+                </div>
+
+                {/* Live Member Groups List */}
+                <MyGroups userId={userId || "sandbox-user-99"} />
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
