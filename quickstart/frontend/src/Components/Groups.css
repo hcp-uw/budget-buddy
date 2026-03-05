@@ -1,79 +1,224 @@
-/* src/Components/Groups.css */
+/* --- 1. GLOBAL RESET & TYPOGRAPHY --- */
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
 
+/* Increased base font size for div, p, span, td, input */
+body, div, p, span, td, input {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  color: #334155;
+  font-size: 1.15rem; /* Increased base readability */
+}
+
+h1, h2, h3, h4, th, strong {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* --- 2. LAYOUT & CENTERING --- */
+.my-groups-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  width: 100%;
+  padding: 20px 0;
+}
+
+.dashboard-actions-container {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* --- 3. THE SLEEK CARDS (Create, Join, & Active) --- */
 .group-card {
   background: #ffffff;
-  border-radius: 32px;
-  padding: 50px;
   width: 100%;
-  max-width: 500px; /* Slightly wider for better readability */
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f0f0f0;
-  margin: 20px auto;
-  transition: all 0.4s ease;
+  max-width: 650px; 
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f1f5f9;
+  margin-bottom: 40px;
 }
 
-.group-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
-}
-
-.groups-header {
-  font-size: 2.2rem; /* Bigger Title */
-  font-weight: 800;
-  color: #111;
-  margin-bottom: 30px;
-  letter-spacing: -1px;
-}
-
+/* --- 4. CREATE / JOIN INPUTS --- */
 .input-group {
-  margin-bottom: 25px; /* More breathing room */
-  text-align: left;
+  margin-bottom: 25px;
 }
 
 .input-group label {
   display: block;
-  font-size: 1rem; /* Increased from 0.75rem */
-  font-weight: 700;
+  font-size: 1rem; /* Increased label size */
+  font-weight: 600 !important;
   color: #64748b;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .group-card input {
   width: 100%;
-  padding: 18px 20px; /* Bigger padding for bigger feel */
-  border: 2px solid #f1f5f9;
-  border-radius: 16px;
-  font-size: 1.1rem; /* Bigger text inside input */
-  background-color: #f8fafc;
-  transition: all 0.2s;
-  box-sizing: border-box;
-  color: #1e293b;
+  padding: 16px 20px;
+  font-size: 1.2rem; /* Increased input text size */
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  transition: all 0.2s ease;
 }
 
 .group-card input:focus {
   outline: none;
-  border-color: #000;
-  background-color: #fff;
-  box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
+  border-color: #94a3b8;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px #f1f5f9;
 }
 
+/* --- 5. BUTTONS (SLATE BLUE, NOT BLACK) --- */
 .btn-modern-primary {
   width: 100%;
-  padding: 20px; /* Larger button */
-  background-color: #000;
-  color: white;
-  border: none;
-  border-radius: 16px;
-  font-weight: 700;
-  font-size: 1.1rem; /* Bigger button text */
+  padding: 18px 24px;
+  font-size: 1.25rem; /* Increased button text size */
+  font-weight: 600 !important;
+  border-radius: 14px;
+  background-color: #334155 !important; 
+  color: #ffffff !important;
+  border: none !important; 
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 10px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(51, 65, 85, 0.15);
 }
 
 .btn-modern-primary:hover {
-  background-color: #334155;
-  transform: scale(1.02);
+  background-color: #1e293b !important;
+  transform: translateY(-2px);
+}
+
+.btn-standings {
+  background-color: #334155 !important; 
+  color: #ffffff !important;
+  border: none !important;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 1.1rem; /* Increased button text size */
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(51, 65, 85, 0.15);
+}
+
+.btn-standings:hover {
+  background-color: #1e293b !important;
+  transform: translateY(-1px);
+}
+
+/* --- 6. ACTIVE CIRCLE HEADER FORMATTING --- */
+.group-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; 
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.group-info h3 {
+  font-size: 2.2rem; /* Increased Circle Name size */
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.target-text {
+  font-size: 1.3rem; /* Increased Target text size */
+  color: #64748b;
+  margin: 0 0 15px 0;
+}
+
+/* Red Code Badge */
+.leaderboard-code-badge {
+  display: inline-block;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: #ef4444 !important; 
+  background-color: #fef2f2 !important; 
+  border: 1px solid #fca5a5 !important;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 1.1rem; /* Increased badge size */
+  font-weight: 600 !important;
+  letter-spacing: 1px;
+}
+
+/* --- 7. LEADERBOARD TABLE STYLING --- */
+.leaderboard-wrapper {
+  margin-top: 40px;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 40px 30px;
+  background: #ffffff;
+}
+
+.leaderboard-wrapper h4 {
+  text-align: center;
+  font-size: 2rem; /* Increased Standings title size */
+  margin-top: 0;
+  margin-bottom: 35px;
+  letter-spacing: -0.5px;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard-table th {
+  font-size: 1rem; /* Increased Table Header size */
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #94a3b8;
+  padding-bottom: 20px;
+}
+
+.leaderboard-table td {
+  padding: 24px 10px;
+  font-size: 1.3rem; /* Increased Table Data size */
+  border-bottom: 1px solid #f8fafc;
+  vertical-align: middle;
+}
+
+.col-rank {
+  text-align: left;
+  padding-left: 20px !important;
+  width: 80px;
+}
+
+.col-member {
+  text-align: center;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: #475569;
+}
+
+.col-balance {
+  text-align: right;
+  padding-right: 20px !important;
+  color: #10b981 !important; 
+  font-weight: 700 !important; /* Made balance slightly bolder for impact */
+}
+
+/* The Gold Winner Row */
+.top-rank td {
+  background-color: #fefce8 !important; 
+  border-bottom: 1px solid #fef08a !important;
+}
+
+.top-rank td:first-child {
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+.top-rank td:last-child {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
 }

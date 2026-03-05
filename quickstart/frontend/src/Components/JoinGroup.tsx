@@ -48,8 +48,6 @@ const JoinGroup: React.FC<Props> = ({ userId }) => {
         } else {
           alert(`🤝 Success! You've joined the ${circle.name} Circle.`);
           setCode('');
-          // Refresh the page or trigger a data pull to show the new circle
-          window.location.reload(); 
         }
       }
     } catch (err: any) {
