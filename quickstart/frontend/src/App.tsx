@@ -6,6 +6,7 @@ import Items from "./Components/ProductTypes/Items";
 import Context from "./Context";
 
 // --- CUSTOM COMPONENTS ---
+// Note: extensions are omitted so React can automatically find .js or .tsx files
 import CreateGroup from "./Components/CreateGroup";
 import JoinGroup from "./Components/JoinGroup";
 import MyGroups from "./Components/MyGroups"; 
@@ -123,7 +124,7 @@ const App = () => {
       <div className={styles.container}>
         <Header />
         
-        {/* Plaid Product Display */}
+        {/* Plaid Flow Display */}
         {linkSuccess && (
           <>
             <Products />
@@ -132,11 +133,11 @@ const App = () => {
         )}
 
         {/* --- SAVING CIRCLES DASHBOARD --- */}
-        {/* Section is completely hidden until a bank account is linked */}
+        {/* This section only renders after successful bank linking */}
         {linkSuccess && (
           <div className="modern-dashboard" style={{ marginTop: '80px', paddingTop: '40px', borderTop: '1px solid #f0f0f0' }}>
             <div className="dashboard-content">
-              <div className="text-center" style={{ textAlign: 'center', marginBottom: '60px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '60px' }}>
                 <h2 className="main-title" style={{ fontSize: '3.5rem', fontWeight: '900', marginBottom: '15px', color: '#111' }}>
                   ⭕ Saving Circles
                 </h2>
@@ -158,7 +159,7 @@ const App = () => {
                   <JoinGroup userId={userId || "sandbox-user-99"} />
                 </div>
 
-                {/* Live Member Groups List */}
+                {/* Dashboard List for Active Circles */}
                 <MyGroups userId={userId || "sandbox-user-99"} />
               </div>
             </div>

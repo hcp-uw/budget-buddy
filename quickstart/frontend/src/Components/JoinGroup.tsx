@@ -19,23 +19,42 @@ const JoinGroup: React.FC<Props> = ({ userId }) => {
     setLoading(true);
     
     try {
-      // Step 1: Verify the circle exists
-      const { data: group, error: fetchError } = await supabase
+      // Step 1: Find the circle using the invite code
+      const { data: circle, error: fetchError } = await supabase
         .from('groups')
         .select('id, name')
         .eq('invite_code', code.toUpperCase())
         .single();
 
-      if (fetchError || !group) {
-        alert("Circle not found. Double-check your code!");
+      if (fetchError || !circle) {
+        alert("Circle not found. Check the code and try again!");
       } else {
-        // Step 2: Logic for joining the circle goes here
-        // (Typically inserting a row into a 'members' or 'leaderboard' table)
-        alert(`🤝 Success! You've joined the ${group.name} Circle.`);
-        setCode('');
+        // Step 2: Add this user to the circle's leaderboard/members table
+        const { error: joinError } = await supabase
+          .from('leaderboard_groups') 
+          .insert([{ 
+            group_id: circle.id, 
+            user_id: userId,
+            joined_at: new Date()
+          }]);
+
+        if (joinError) {
+          // Error 23505 is a unique constraint violation (already joined)
+          if (joinError.code === '23505') {
+            alert("You are already a member of this circle!");
+          } else {
+            throw joinError;
+          }
+        } else {
+          alert(`🤝 Success! You've joined the ${circle.name} Circle.`);
+          setCode('');
+          // Refresh the page or trigger a data pull to show the new circle
+          window.location.reload(); 
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Join Error:", err);
+      alert(`Error joining: ${err.message}`);
     } finally {
       setLoading(false);
     }
