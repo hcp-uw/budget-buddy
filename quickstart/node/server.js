@@ -68,6 +68,25 @@ app.post('/api/info', (req, res) => {
   });
 });
 
+app.get('/api/debug/plaid-items', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('plaid_items')
+      .select('*');
+    
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+    
+    res.json({ 
+      count: data.length,
+      items: data 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/set_access_token', function (request, response, next) {
   console.log('Full request body:', request.body)  
   PUBLIC_TOKEN = request.body.public_token;
@@ -132,6 +151,34 @@ app.get('/api/transactions', function (request, response, next) {
         prettyPrintResponse(syncResponse);
       }
 
+      // Also sync to Supabase
+      if (added.length > 0) {
+        try {
+          const { error: upsertError } = await supabase
+            .from('transactions')
+            .insert(
+              added.map(t => ({
+                user_id: '4daed9c1-65c8-4348-9951-7d0df4852110',
+                plaid_item_id: ITEM_ID,
+                plaid_transaction_id: t.transaction_id,
+                amount: t.amount,
+                date: t.date,
+                merchant_name: t.merchant_name || t.name,
+                category: t.personal_finance_category?.primary || 'Other',
+                pending: t.pending
+              }))
+            );
+          
+          if (!upsertError) {
+            console.log(`✅ Inserted ${added.length} transactions to Supabase with item_id: ${ITEM_ID}`);
+          } else {
+            console.error('⚠️ Supabase insert error:', upsertError);
+          }
+        } catch (supabaseError) {
+          console.error('⚠️ Supabase sync failed:', supabaseError);
+        }
+      }
+
       const compareTxnsByDateAscending = (a, b) =>
         (a.date > b.date) - (a.date < b.date);
       const recently_added = [...added]
@@ -168,55 +215,127 @@ app.post('/image/upload', (req, res) => {
 
 app.post('/api/transactions/sync', async (req, res) => {
     try {
-      const { data: plaidItem, error: itemError } = await supabase
+      console.log('🔍 Sync request received...');
+      const { data: plaidItems, error: itemError } = await supabase
         .from('plaid_items')
         .select('*')
         .eq('user_id', '4daed9c1-65c8-4348-9951-7d0df4852110')
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1);
 
+        console.log('📦 Supabase query result:', { data: plaidItems, error: itemError });
+        
         if (itemError) {
-          console.error('Error fetching plaid item from Supabase:', itemError);
-          return res.status(500).json({ error: 'Failed to fetch plaid item' });
+          console.error('❌ Error fetching plaid item from Supabase:', itemError);
+          return res.status(500).json({ error: 'Failed to fetch plaid item', details: itemError });
+        }
+        
+        if (!plaidItems || plaidItems.length === 0) {
+          return res.status(404).json({ error: 'No plaid items found for this user' });
+        }
+        
+        const plaidItem = plaidItems[0];
+        console.log('✅ Found plaid item:', plaidItem.plaid_item_id);
+
+        // Decode the hex-encoded access token if needed
+        let accessToken = plaidItem.access_token;
+        if (accessToken.startsWith('\\x')) {
+          // It's hex-encoded, convert it back to string
+          accessToken = Buffer.from(accessToken.slice(2), 'hex').toString('utf8');
+          console.log('Decoded access token:', accessToken);
         }
 
         let cursor = plaidItem.cursor || null;
         let added = [];
+        let modified = [];
+        let removed = [];
         let hasMore = true;
 
+        // Sync all transactions from Plaid
         while(hasMore) {
           const syncRequest = await plaidClient.transactionsSync({
-            access_token: plaidItem.access_token,
+            access_token: accessToken,
             cursor: cursor,
           });
 
           added = added.concat(syncRequest.data.added);
+          modified = modified.concat(syncRequest.data.modified);
+          removed = removed.concat(syncRequest.data.removed);
           cursor = syncRequest.data.next_cursor;  
           hasMore = syncRequest.data.has_more;
         }
 
+        // Upsert added transactions
         if (added.length > 0) {
-          await supabase .from('transactions')
-          .upsert(
-            added.map(t => ({
-              user_id: '4daed9c1-65c8-4348-9951-7d0df4852110',
-              plaid_item_id: plaidItem.plaid_item_id,
-              plaid_transaction_id: t.transaction_id,
-              amount: t.amount,
-              date: t.date,
-              merchant_name: t.merchant_name,
-              category: t.personal_finance_category?.primary || 'Other',
-              pending: t.pending
-            })),
-            { onConflict: 'plaid_transaction_id' }
-          )
+          const { error: upsertError } = await supabase
+            .from('transactions')
+            .insert(
+              added.map(t => ({
+                user_id: '4daed9c1-65c8-4348-9951-7d0df4852110',
+                plaid_item_id: plaidItem.plaid_item_id,
+                plaid_transaction_id: t.transaction_id,
+                amount: t.amount,
+                date: t.date,
+                merchant_name: t.merchant_name || t.name,
+                category: t.personal_finance_category?.primary || 'Other',
+                pending: t.pending
+              }))
+            );
+          
+          if (upsertError) {
+            console.error('❌ Error inserting transactions:', upsertError);
+          } else {
+            console.log(`✅ Inserted ${added.length} transactions`);
+          }
         }
-                await supabase
+
+        // Handle modified transactions
+        if (modified.length > 0) {
+          const { error: updateError } = await supabase
+            .from('transactions')
+            .upsert(
+              modified.map(t => ({
+                user_id: '4daed9c1-65c8-4348-9951-7d0df4852110',
+                plaid_transaction_id: t.transaction_id,
+                amount: t.amount,
+                date: t.date,
+                merchant_name: t.merchant_name || t.name,
+                category: t.personal_finance_category?.primary || 'Other',
+                pending: t.pending
+              })),
+              { onConflict: 'plaid_transaction_id' }
+            );
+          
+          if (updateError) {
+            console.error('❌ Error updating transactions:', updateError);
+          } else {
+            console.log(`✅ Updated ${modified.length} transactions`);
+          }
+        }
+
+        // Handle removed transactions
+        if (removed.length > 0) {
+          const removedIds = removed.map(t => t.transaction_id);
+          const { error: deleteError } = await supabase
+            .from('transactions')
+            .delete()
+            .in('plaid_transaction_id', removedIds)
+            .eq('user_id', '4daed9c1-65c8-4348-9951-7d0df4852110');
+          
+          if (deleteError) {
+            console.error('Error deleting transactions:', deleteError);
+          } else {
+            console.log(`✅ Deleted ${removed.length} transactions`);
+          }
+        }
+
+        // Update cursor in Supabase
+        await supabase
           .from('plaid_items')
           .update({ cursor: cursor })
           .eq('user_id', '4daed9c1-65c8-4348-9951-7d0df4852110');
 
-        console.log(`✅ Synced ${added.length} transactions`);
-        res.json({ synced: added.length });
+        res.json({ added: added.length, modified: modified.length, removed: removed.length });
 
   } catch (error) {
     console.error('Sync error:', error.response?.data || error.message);

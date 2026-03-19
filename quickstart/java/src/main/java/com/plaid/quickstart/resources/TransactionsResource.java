@@ -72,6 +72,15 @@ public class TransactionsResource {
     // Return the 8 most recent transactions
     added.sort(new TransactionsResource.CompareTransactionDate());
     List<Transaction> latestTransactions = added.subList(Math.max(added.size() - 8, 0), added.size());
+    
+    // Call Node.js backend to sync to Supabase
+    try {
+      callNodeBackendSync();
+    } catch (Exception e) {
+      System.err.println("Failed to sync to Node backend: " + e.getMessage());
+      e.printStackTrace();
+    }
+    
     return new TransactionsResponse(latestTransactions);
   }
 
@@ -79,6 +88,28 @@ public class TransactionsResource {
     @Override
     public int compare(Transaction o1, Transaction o2) {
         return o1.getDate().compareTo(o2.getDate());
+    }
+  }
+
+  private void callNodeBackendSync() throws IOException {
+    // Make HTTP call to Node.js backend to sync transactions to Supabase
+    String url = "http://localhost:8000/api/transactions/sync";
+    
+    okhttp3.OkHttpClient client = new okhttp3.OkHttpClient();
+    okhttp3.MediaType jsonMediaType = okhttp3.MediaType.get("application/json; charset=utf-8");
+    String json = "{}";
+    okhttp3.RequestBody body = okhttp3.RequestBody.create(json, jsonMediaType);
+    okhttp3.Request request = new okhttp3.Request.Builder()
+        .url(url)
+        .post(body)
+        .build();
+    
+    try (okhttp3.Response response = client.newCall(request).execute()) {
+      if (response.isSuccessful()) {
+        System.out.println("✅ Node backend sync successful: " + response.body().string());
+      } else {
+        System.out.println("❌ Node backend sync failed: " + response.code() + " " + response.message());
+      }
     }
   }
   
