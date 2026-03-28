@@ -66,6 +66,16 @@ let PAYMENT_ID = null;
 let AUTHORIZATION_ID = null;
 let TRANSFER_ID = null;
 
+
+
+// (streaks temp)
+// Temporary in-memory user (ONLY for testing)
+// This resets every time the server restarts
+let fakeUser = {
+  streak: 0,
+  lastClickDate: null,
+};
+
 // Initialize the Plaid client
 // Find your API keys in the Dashboard (https://dashboard.plaid.com/account/keys)
 
@@ -886,6 +896,58 @@ const pollWithRetries = (
         }, ms);
       });
   });
+
+
+
+
+// Route: user just clicks on a link to maintain streak
+// replace later with completion of quizzes
+app.get('/api/streak/click', (req, res) => {
+
+  const today = new Date();
+  const todayStr = today.toDateString();
+  const lastDate = fakeUser.lastClickDate
+    ? new Date(fakeUser.lastClickDate).toDateString()
+    : null;
+
+  let streak = fakeUser.streak || 0;
+
+  // CASE 1: User has never clicked before
+  if (!lastDate) {
+    streak = 1; // start streak
+
+  } else {
+
+    // Calculate difference in days between today and last click
+    const diffDays =
+      (today - new Date(lastDate)) / (1000 * 60 * 60 * 24);
+
+    // CASE 2: User already clicked today
+    if (diffDays < 1) {
+      return res.json({
+        streak,
+        message: 'Already clicked today'
+      });
+
+    // CASE 3: User clicked yesterday → continue streak
+    } else if (diffDays < 2) {
+      streak += 1;
+
+    // CASE 4: Missed a day → reset streak
+    } else {
+      streak = 1;
+    }
+  }
+
+  fakeUser.streak = streak;
+  fakeUser.lastClickDate = today;
+
+  // Send updated streak back to frontend
+  res.json({ streak });
+});
+
+
+
 
 app.use('/api', function (error, request, response, next) {
   console.log(error);

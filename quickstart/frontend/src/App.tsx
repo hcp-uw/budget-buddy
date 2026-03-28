@@ -9,6 +9,7 @@ import Context from "./Context";
 import CreateGroup from "./Components/CreateGroup";
 import JoinGroup from "./Components/JoinGroup";
 import MyGroups from "./Components/MyGroups"; 
+import StreakTracker from "./Components/StreakTracker";
 
 // --- STYLING ---
 import "./Components/Groups.css"; 
@@ -131,9 +132,15 @@ const App = () => {
           </>
         )}
 
-        {/* --- SAVING CIRCLES DASHBOARD --- */}
+
+        
         {/* Section is completely hidden until a bank account is linked */}
         {linkSuccess && (
+          <>
+          {/*--- Streak Tracker ---*/}
+          <StreakTracker userId={userId || "sandbox-user-99"} />
+
+          {/* --- SAVING CIRCLES DASHBOARD --- */}
           <div className="modern-dashboard" style={{ marginTop: '80px', paddingTop: '40px', borderTop: '1px solid #f0f0f0' }}>
             <div className="dashboard-content">
               <div className="text-center" style={{ textAlign: 'center', marginBottom: '60px' }}>
@@ -163,6 +170,7 @@ const App = () => {
               </div>
             </div>
           </div>
+          </>
         )}
       </div>
     </div>
