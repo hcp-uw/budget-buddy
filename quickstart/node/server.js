@@ -212,7 +212,7 @@ app.post('/image/upload', (req, res) => {
   res.status(201).send('Image uploaded');
 });
 
-
+// SYNC ENDPOINT /////////////////////////////////////////
 app.post('/api/transactions/sync', async (req, res) => {
     try {
       console.log('🔍 Sync request received...');
