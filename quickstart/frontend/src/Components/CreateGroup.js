@@ -15,7 +15,6 @@ const CreateGroup = ({ userId }) => {
     }
     
     setLoading(true);
-    // Generates a random 6-digit invite code
     const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     try {
@@ -79,5 +78,5 @@ const CreateGroup = ({ userId }) => {
   );
 };
 
-// This line is crucial—it fixes the "No default export" error in App.tsx
+
 export default CreateGroup;
