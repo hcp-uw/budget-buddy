@@ -72,7 +72,7 @@ export default function App() {
   
   return (
 
-    <div className="min-h-screen bg-[#1a0f2e] overflow-x-hidden">
+    <div className="min-h-screen bg-[#1a0f2e]">
       {/* Stars Background */}
       <div className="fixed inset-0 z-0">
         {[...Array(50)].map((_, i) => (

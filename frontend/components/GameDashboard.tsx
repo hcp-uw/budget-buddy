@@ -35,8 +35,13 @@ export function GameDashboard({ coins, setCoins, xp, setXp }: GameDashboardProps
   const currentLevelXP = 3000;
   const nextLevelXP = 4000;
   const xpProgress = ((xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('');
+  const [budget, setBudget] = useState(2000);
+  const [spent] = useState(1550);
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#ff6b9d] via-[#a78bfa] to-[#4ecdc4] p-6 pixel-borders">
@@ -60,7 +65,7 @@ export function GameDashboard({ coins, setCoins, xp, setXp }: GameDashboardProps
         </div>
 
         {/* XP Progress */}
-        <div className="lg:col-span-2 bg-[#2d1b4e] p-6 pixel-borders border-4 border-[#6b4e91]">
+        <div className="lg:col-span-1 bg-[#2d1b4e] p-6 pixel-borders border-4 border-[#6b4e91]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white pixel-font text-sm">EXPERIENCE</h3>
             <span className="text-[#4ecdc4] pixel-font text-xs">{xp} / {nextLevelXP} XP</span>
@@ -86,7 +91,35 @@ export function GameDashboard({ coins, setCoins, xp, setXp }: GameDashboardProps
             </div>
           </div>
         </div>
+
+        {/* Monthly Budget */}
+        <div className="lg:col-span-1 bg-[#2d1b4e] p-6 pixel-borders border-4 border-[#6b4e91]">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white pixel-font text-sm">MONTHLY BUDGET</h3>
+            <button
+              onClick={() => setShowBudgetModal(true)}
+              className="bg-[#ff6b9d] text-white pixel-font text-xs px-2 py-1 pixel-borders hover:bg-[#ff5a8d]"
+            >
+              SET
+            </button>
+          </div>
+          <div className="bg-[#3d2661] p-3 pixel-borders mb-3">
+            <div className="text-[#c7b8ea] text-xs mb-1">Budget Goal</div>
+            <div className="text-white pixel-font text-sm">${budget.toLocaleString()}</div>
+          </div>
+          <div className="bg-[#3d2661] p-3 pixel-borders mb-3">
+            <div className="text-[#c7b8ea] text-xs mb-1">Spent So Far</div>
+            <div className="text-white pixel-font text-sm">${spent.toLocaleString()}</div>
+          </div>
+          <div className="bg-[#3d2661] p-3 pixel-borders">
+            <div className="text-[#c7b8ea] text-xs mb-1">Remaining</div>
+            <div className="text-[#4ecdc4] pixel-font text-sm">${(budget - spent).toLocaleString()}</div>
+          </div>
+        </div>
       </div>
+
+        
+
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -149,6 +182,39 @@ export function GameDashboard({ coins, setCoins, xp, setXp }: GameDashboardProps
           ))}
         </div>
       </div>
+
+      {showBudgetModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+        <div className="bg-[#2d1b4e] pixel-borders border-4 border-[#6b4e91] w-80" style={{ width: '500px', padding: '40px' }}>
+          <h3 className="text-white pixel-font text-sm mb-6">SET MONTHLY BUDGET</h3>
+          <input
+            type="number"
+            value={budgetInput}
+            onChange={(e) => setBudgetInput(e.target.value)}
+            placeholder="Enter amount..."
+            className="w-full p-3 bg-[#1a0f2e] text-white pixel-font text-sm border-4 border-[#6b4e91] mb-4 focus:outline-none focus:border-[#ff6b9d]"
+          />
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setBudget(Number(budgetInput));
+                setShowBudgetModal(false);
+              }}
+              className="flex-1 bg-[#ff6b9d] text-white pixel-font text-xs py-2 pixel-borders hover:bg-[#ff5a8d]"
+            >
+              CONFIRM
+            </button>
+            <button
+              onClick={() => setShowBudgetModal(false)}
+              className="flex-1 bg-[#3d2661] text-white pixel-font text-xs py-2 pixel-borders hover:bg-[#4d3671]"
+            >
+              CANCEL
+            </button>
+          </div>
+        </div>
+      </div>
+)}
     </div>
+    </>
   );
 }
