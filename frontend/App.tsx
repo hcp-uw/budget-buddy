@@ -26,6 +26,7 @@ export default function App() {
   const [coins, setCoins] = useState(1250);
   const [xp, setXp] = useState(3450);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  const [username, setUsername] = useState('Player');
 
   const navItems = [
     { id: 'dashboard' as View, label: 'Home', icon: Gamepad2 },
@@ -126,12 +127,12 @@ export default function App() {
           onMouseEnter={() => setIsSidebarHovered(true)}
           onMouseLeave={() => setIsSidebarHovered(false)}
         >
-          <div className={`${isSidebarHovered ? 'p-6' : 'p-2'}`}>
+          <div className={`${isSidebarHovered ? 'p-6' : 'p-2'}`} style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
             <div style={{ height: '160px' }}>
               {isSidebarHovered && (
                 <>
                   <h1 className="text-[#ffd93d] pixel-font text-sm mb-2">BUDGET BUDDY</h1>
-                  <p className="text-[#c7b8ea] text-xs mb-6">Level Up Your Savings!</p>
+                  <p className="text-[#c7b8ea] text-xs mb-6">UserName: {username}</p>
                   <div className="mb-6 bg-[#3d2661] p-4 pixel-borders">
                     <div className="flex items-center gap-2 mb-2">
                       <Coins className="w-5 h-5 text-[#ffd93d]" />
@@ -148,6 +149,18 @@ export default function App() {
                 <NavButton key={item.id} item={item} />
               ))}
             </nav>
+
+            {/* Logout */}
+            <button
+              onClick={() => setCurrentView('HomePage')}
+              className="w-full flex items-center justify-center gap-3 py-4 transition-all pixel-borders bg-[#3d2661] text-white hover:bg-[#ff6b9d] mt-4"
+              style={{ cursor: 'pointer', marginTop: 'auto'}}
+            >
+              <span className="text-xs pixel-font">
+                {isSidebarHovered ? 'LOGOUT' : '↩'}
+              </span>
+            </button>
+
           </div>
         </aside>
 

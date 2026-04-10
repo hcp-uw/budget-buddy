@@ -19,7 +19,14 @@ const allFriends = [
   { name: 'User9', xp: 800 },
 ];
 
-const groups = [
+
+export function LeaderBoard({ coins, setCoins }: LeaderBoardProps) {
+  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [friendUsername, setFriendUsername] = useState('');
+  const [showAddGroup, setShowAddGroup] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
+  const [groups, setGroups] = useState([
   {
     id: 0,
     name: 'All Friends',
@@ -59,18 +66,10 @@ const groups = [
       { rank: 3, name: 'User8', xp: 1200 },
     ].sort((a, b) => b.xp - a.xp).map((f, i) => ({ ...f, rank: i + 1 })),
   },
-];
-
-export function LeaderBoard({ coins, setCoins }: LeaderBoardProps) {
+  ]);
   const [selectedGroup, setSelectedGroup] = useState(groups[0]);
-
   const myRank = selectedGroup.ranking.find((r) => r.name === 'You')?.rank ?? '-';
   const above = selectedGroup.ranking.find((r) => r.rank === (myRank as number) - 1);
-  const [showAddFriend, setShowAddFriend] = useState(false);
-  const [friendUsername, setFriendUsername] = useState('');
-  const [showAddGroup, setShowAddGroup] = useState(false);
-  const [groupName, setGroupName] = useState('');
-  const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
 
   return (
     <div className="space-y-6">
@@ -241,10 +240,27 @@ export function LeaderBoard({ coins, setCoins }: LeaderBoardProps) {
           <div className="flex gap-3">
             <button
               onClick={() => {
-                setShowAddGroup(false);
-                setGroupName('');
-                setSelectedFriends([]);
-              }}
+  if (groupName.trim()) {
+    const newGroup = {
+      id: groups.length + 1,
+      name: groupName,
+      members: selectedFriends.length + 1,
+      ranking: [
+        { rank: 1, name: 'You', xp: 3450 },
+        ...selectedFriends.map((name, i) => ({
+          rank: i + 2,
+          name,
+          xp: allFriends.find(f => f.name === name)?.xp ?? 0,
+        })),
+      ].sort((a, b) => b.xp - a.xp).map((f, i) => ({ ...f, rank: i + 1 })),
+    };
+    setGroups(prev => [...prev, newGroup]);
+    setSelectedGroup(newGroup);
+  }
+  setShowAddGroup(false);
+  setGroupName('');
+  setSelectedFriends([]);
+}}
               className="flex-1 bg-[#ff6b9d] text-white pixel-font text-xs py-2 pixel-borders"
               style={{ cursor: 'pointer' }}
             >
