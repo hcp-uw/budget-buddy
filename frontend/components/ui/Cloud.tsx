@@ -36,7 +36,9 @@ export function Cloud({ delay, startX, y, duration, size }: CloudProps) {
       {/* Pixelated cloud using rectangles */}
       <div className="relative" style={{ width: dimensions.width, height: dimensions.height }}>
         {/* Cloud body - pixelated style */}
-        <div className="absolute bg-white/80 border-4 border-white/50" 
+        <div className="absolute bg-white rounded-full"
+          style={{ width: '40%', height: '60%', left: '30%', top: '0%' }} />
+        <div className="absolute bg-white rounded-full" 
           style={{ 
             width: '40%', 
             height: '50%', 
@@ -46,7 +48,7 @@ export function Cloud({ delay, startX, y, duration, size }: CloudProps) {
             imageRendering: 'pixelated'
           }} 
         />
-        <div className="absolute bg-white/80 border-4 border-white/50" 
+        <div className="absolute bg-white rounded-full" 
           style={{ 
             width: '30%', 
             height: '40%', 
@@ -56,7 +58,7 @@ export function Cloud({ delay, startX, y, duration, size }: CloudProps) {
             imageRendering: 'pixelated'
           }} 
         />
-        <div className="absolute bg-white/80 border-4 border-white/50" 
+        <div className="absolute bg-white rounded-full" 
           style={{ 
             width: '35%', 
             height: '45%', 
@@ -66,7 +68,7 @@ export function Cloud({ delay, startX, y, duration, size }: CloudProps) {
             imageRendering: 'pixelated'
           }} 
         />
-        <div className="absolute bg-white/80 border-4 border-white/50" 
+        <div className="absolute bg-white rounded-full" 
           style={{ 
             width: '25%', 
             height: '35%', 
@@ -76,7 +78,7 @@ export function Cloud({ delay, startX, y, duration, size }: CloudProps) {
             imageRendering: 'pixelated'
           }} 
         />
-        <div className="absolute bg-white/80 border-4 border-white/50" 
+        <div className="absolute bg-white rounded-full" 
           style={{ 
             width: '28%', 
             height: '38%', 

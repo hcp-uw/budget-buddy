@@ -39,18 +39,24 @@ export function Sparkle({ x, y, delay = 0, size = 12 }: SparkleProps) {
       />
       {/* Cross highlight */}
       <div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white"
+        className="absolute bg-white"
         style={{
           width: `${size * 1.5}px`,
           height: `${size * 0.3}px`,
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           boxShadow: '0 0 8px rgba(255, 255, 255, 0.8)'
         }}
       />
       <div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white"
+        className="absolute bg-white"
         style={{
           width: `${size * 0.3}px`,
           height: `${size * 1.5}px`,
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           boxShadow: '0 0 8px rgba(255, 255, 255, 0.8)'
         }}
       />

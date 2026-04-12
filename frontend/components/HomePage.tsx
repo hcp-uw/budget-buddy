@@ -1,12 +1,9 @@
 import { motion } from 'framer-motion';
 import { Cloud } from './ui/Cloud';
-import { Star } from './ui/Star';
 import { Comet } from './ui/Comet';
 import { PlayButton } from './ui/PlayButton';
 import { PixelatedMoon } from './ui/PixelatedMoon';
 import { PixelatedPlanet } from './ui/PixelatedPlanet';
-import { ShootingStar } from './ui/ShootingStar';
-import { Nebula } from './ui/Nebula';
 import { PixelatedAsteroid } from './ui/PixelatedAsteroid';
 import { Sparkle } from './ui/Sparkle';
 import { GalaxySpiral } from './ui/GalaxySpiral';
@@ -105,13 +102,6 @@ export function HomePage({ onPlayClick }: HomePageProps) {
         ))}
       </div>
 
-      {/* Nebula clouds - magical glowing gas clouds */}
-      <Nebula x={15} y={20} size={400} color="rgba(139, 92, 246, 0.25)" />
-      <Nebula x={70} y={35} size={350} color="rgba(217, 70, 239, 0.2)" />
-      <Nebula x={45} y={60} size={450} color="rgba(168, 85, 247, 0.18)" />
-      <Nebula x={85} y={75} size={300} color="rgba(192, 132, 252, 0.22)" />
-      <Nebula x={30} y={85} size={380} color="rgba(217, 70, 239, 0.15)" />
-
       {/* Galaxy Spirals */}
       <GalaxySpiral x={10} y={25} size={100} delay={0.5} />
       <GalaxySpiral x={85} y={60} size={120} delay={1.2} />
@@ -141,34 +131,15 @@ export function HomePage({ onPlayClick }: HomePageProps) {
       <PixelatedPlanet x={92} y={80} size={55} color1="#e879f9" color2="#d946ef" delay={1.2} hasRing={true} />
       <PixelatedPlanet x={5} y={85} size={40} color1="#f0abfc" color2="#e879f9" delay={1.5} hasRing={false} />
 
-      {/* Larger animated stars */}
-      <Star delay={0} x={12} y={12} />
-      <Star delay={0.5} x={88} y={8} />
-      <Star delay={1} x={25} y={78} />
-      <Star delay={1.5} x={93} y={85} />
-      <Star delay={2} x={52} y={22} />
-      <Star delay={0.8} x={78} y={58} />
-      <Star delay={1.2} x={18} y={42} />
-      <Star delay={1.8} x={96} y={32} />
-      <Star delay={0.3} x={45} y={88} />
-      <Star delay={1.6} x={68} y={15} />
-
-      {/* Shooting stars */}
-      <ShootingStar delay={2} />
-      <ShootingStar delay={8} />
-      <ShootingStar delay={14} />
-      <ShootingStar delay={20} />
-      <ShootingStar delay={26} />
-
       {/* Animated cosmic clouds */}
-      <Cloud delay={0} startX={-20} y={10} duration={45} size="large" />
-      <Cloud delay={3} startX={-15} y={22} duration={50} size="medium" />
-      <Cloud delay={6} startX={-18} y={35} duration={42} size="small" />
-      <Cloud delay={9} startX={-20} y={48} duration={48} size="medium" />
-      <Cloud delay={12} startX={-16} y={60} duration={44} size="large" />
-      <Cloud delay={5} startX={-19} y={72} duration={46} size="small" />
-      <Cloud delay={15} startX={-17} y={82} duration={43} size="medium" />
-      <Cloud delay={8} startX={-20} y={92} duration={47} size="large" />
+      <Cloud delay={0} startX={-20} y={Math.random() * 80 + 10} duration={45} size="large" />
+      <Cloud delay={5} startX={-15} y={Math.random() * 80 + 10} duration={50} size="medium" />
+      <Cloud delay={8} startX={-18} y={Math.random() * 80 + 10} duration={42} size="small" />
+      <Cloud delay={12} startX={-20} y={Math.random() * 80 + 10} duration={48} size="medium" />
+      <Cloud delay={14} startX={-16} y={Math.random() * 80 + 10} duration={44} size="large" />
+      <Cloud delay={20} startX={-19} y={Math.random() * 80 + 10} duration={46} size="small" />
+      <Cloud delay={27} startX={-17} y={Math.random() * 80 + 10} duration={43} size="medium" />
+      <Cloud delay={30} startX={-20} y={Math.random() * 80 + 10} duration={47} size="large" />
 
       {/* Comets streaking across */}
       <Comet delay={0} />
@@ -342,43 +313,11 @@ export function HomePage({ onPlayClick }: HomePageProps) {
               <br />
               BUDDY
             </motion.div>
-          </div>
-
-          {/* Pixelated stars decoration under title */}
-          <motion.div 
-            className="flex justify-center gap-6 mt-8"
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 2.5, repeat: Infinity }}
-          >
-            {[...Array(5)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="relative"
-                animate={{ 
-                  rotate: [0, 360],
-                  scale: [1, 1.2, 1]
-                }}
-                transition={{ 
-                  duration: 3,
-                  delay: i * 0.2,
-                  repeat: Infinity 
-                }}
-              >
-                {/* Pixelated star shape */}
-                <div className="relative w-8 h-8">
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-yellow-300" />
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-yellow-300" />
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-300" />
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-300" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-yellow-200" style={{ boxShadow: '0 0 12px rgba(253, 224, 71, 0.8)' }} />
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+            </div>
           </motion.div>
 
           {/* Play Button */}
-          <div className="flex justify-center mt-8 relative z-30">
+          <div className="flex justify-center relative z-30" style={{ marginTop: '40px' }}>
             <PlayButton onClick={onPlayClick} />
           </div>
         </div>

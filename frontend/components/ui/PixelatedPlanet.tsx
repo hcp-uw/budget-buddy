@@ -61,34 +61,12 @@ export function PixelatedPlanet({
             imageRendering: 'pixelated'
           }}
         >
-          {/* Surface details - pixelated squares */}
-          <div 
-            className="absolute top-2 left-4 w-2 h-2"
-            style={{ 
-              backgroundColor: 'rgba(0, 0, 0, 0.2)',
-              imageRendering: 'pixelated'
-            }}
-          />
-          <div 
-            className="absolute top-1/2 right-3 w-3 h-3"
-            style={{ 
-              backgroundColor: 'rgba(0, 0, 0, 0.15)',
-              imageRendering: 'pixelated'
-            }}
-          />
-          <div 
-            className="absolute bottom-4 left-1/3 w-2 h-2"
-            style={{ 
-              backgroundColor: 'rgba(0, 0, 0, 0.2)',
-              imageRendering: 'pixelated'
-            }}
-          />
         </div>
 
         {/* Pixelated ring */}
         {hasRing && (
           <div 
-            className="absolute top-1/2 left-1/2 border-4"
+            className="border-4"
             style={{
               width: `${size * 1.5}px`,
               height: `${size * 0.4}px`,
@@ -96,7 +74,10 @@ export function PixelatedPlanet({
               borderColor: `${color1}99`,
               borderTopColor: 'transparent',
               borderBottomColor: `${color1}dd`,
-              transform: 'translate(-50%, -50%) rotateX(75deg)',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%) rotate(-20deg)',
               opacity: 0.6,
               boxShadow: `0 2px 8px ${color2}66`
             }}

@@ -28,7 +28,7 @@ export function Star({ delay, x, y }: StarProps) {
       }}
     >
       {/* Pixelated star shape */}
-      <div className="relative w-8 h-8">
+      <div className="relative w-8 h-8" >
         {/* Center */}
         <div className="absolute w-3 h-3 bg-yellow-300 border-2 border-yellow-400 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           style={{ 

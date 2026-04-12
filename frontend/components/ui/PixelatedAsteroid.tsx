@@ -32,10 +32,11 @@ export function PixelatedAsteroid({ delay = 0, y = 50, size = 'medium' }: Pixela
       }}
     >
       <div 
-        className="relative bg-gray-700"
+        className="relative bg-black"
         style={{
           width: `${width}px`,
           height: `${height}px`,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
           clipPath: 'polygon(30% 0%, 70% 10%, 90% 30%, 100% 60%, 85% 90%, 50% 100%, 20% 95%, 0% 65%, 10% 30%)',
           boxShadow: '2px 2px 6px rgba(0, 0, 0, 0.5)',
           imageRendering: 'pixelated'
