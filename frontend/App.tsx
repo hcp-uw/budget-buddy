@@ -3,11 +3,11 @@ import { GameDashboard } from './components/GameDashboard';
 import { QuestBoard } from './components/QuestBoard';
 import { Achievements } from './components/Achievements';
 import { Shop } from './components/Shop';
-import { LeaderBoard } from './components/LeaderBoard';
-import { HomePage } from './components/HomePage';
-import { LoginPage } from './components/LoginPage';
-import { PixelBuddy } from './components/PixelBuddy';
-import PlaidButton from './PlaidButton'; // <-- I added the import here
+import{ LeaderBoard } from './components/LeaderBoard';
+import{HomePage} from './components/HomePage';
+import{LoginPage} from './components/LoginPage';
+import PlaidButton from './PlaidButton';
+
 
 import {
   Gamepad2,
@@ -27,6 +27,7 @@ export default function App() {
   const [coins, setCoins] = useState(1250);
   const [xp, setXp] = useState(3450);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  const [username, setUsername] = useState('Player');
 
   const navItems = [
     { id: 'dashboard' as View, label: 'Home', icon: Gamepad2 },
@@ -41,13 +42,13 @@ export default function App() {
   }
 
   if (currentView === 'LoginPage') {
-    return (
-      <LoginPage
-        onBack={() => setCurrentView('HomePage')}
-        onLoginSuccess={() => setCurrentView('dashboard')}
-      />
-    );
-  }
+  return (
+    <LoginPage
+      onBack={() => setCurrentView('HomePage')}
+      onLoginSuccess={() => setCurrentView('dashboard')}
+    />
+  );
+}
 
   const NavButton = ({ item }: { item: typeof navItems[0] }) => {
     const Icon = item.icon;
@@ -57,20 +58,23 @@ export default function App() {
           setCurrentView(item.id);
           setIsMenuOpen(false);
         }}
-        className={`w-full flex items-center gap-3 px-4 py-4 transition-all pixel-borders ${
-          currentView === item.id
-            ? 'bg-[#ff6b9d] text-white'
-            : 'bg-[#3d2661] text-white hover:bg-[#4d3671]'
-        }`}
-      >
-        <Icon className="w-5 h-5 shrink-0" />
-        <span className={`text-xs pixel-font transition-opacity duration-300 whitespace-nowrap ${!isSidebarHovered ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'lg:opacity-100'}`}>{item.label}</span>
-      </button>
+        className={`w-full flex items-center justify-center gap-3 py-4 transition-all pixel-borders ${
+        currentView === item.id
+          ? 'bg-[#ff6b9d] text-white'
+          : 'bg-[#3d2661] text-white hover:bg-[#4d3671]'
+      }`}
+    >
+      <Icon className="w-5 h-5 shrink-0" />
+      {isSidebarHovered && (
+        <span className="text-xs pixel-font whitespace-nowrap">{item.label}</span>
+      )}
+    </button>
     );
   };
-
+  
   return (
-    <div className="min-h-screen bg-[#1a0f2e] overflow-x-hidden">
+
+    <div className="min-h-screen bg-[#1a0f2e]">
       {/* Stars Background */}
       <div className="fixed inset-0 z-0">
         {[...Array(50)].map((_, i) => (
@@ -118,46 +122,58 @@ export default function App() {
       <div className="flex relative z-10">
         {/* Desktop Sidebar */}
         <aside
-          className={`hidden lg:block min-h-screen bg-[#2d1b4e] border-r-4 border-[#6b4e91] transition-all duration-300 ease-in-out ${
-            isSidebarHovered ? 'w-64' : 'w-20'
+          className={`hidden lg:block fixed min-h-screen bg-[#2d1b4e] border-r-4 border-[#6b4e91] transition-all duration-300 ease-in-out z-50 ${
+            isSidebarHovered ? 'w-64' : 'w-16'
           }`}
           onMouseEnter={() => setIsSidebarHovered(true)}
           onMouseLeave={() => setIsSidebarHovered(false)}
         >
-          <div className="p-6">
-            {isSidebarHovered ? (
-              <>
-                <h1 className="text-[#ffd93d] pixel-font text-sm mb-2">BUDGET BUDDY</h1>
-                <p className="text-[#c7b8ea] text-xs mb-6">Level Up Your Savings!</p>
-
-                {/* Coins Display */}
-                <div className="mb-6 bg-[#3d2661] p-4 pixel-borders">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Coins className="w-5 h-5 text-[#ffd93d]" />
-                    <span className="text-[#ffd93d] pixel-font text-sm">{coins}</span>
+          <div className={`${isSidebarHovered ? 'p-6' : 'p-2'}`} style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <div style={{ height: '160px' }}>
+              {isSidebarHovered && (
+                <>
+                  <h1 className="text-[#ffd93d] pixel-font text-sm mb-2">BUDGET BUDDY</h1>
+                  <p className="text-[#c7b8ea] text-xs mb-6">UserName: {username}</p>
+                  <div className="mb-6 bg-[#3d2661] p-4 pixel-borders">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Coins className="w-5 h-5 text-[#ffd93d]" />
+                      <span className="text-[#ffd93d] pixel-font text-sm">{coins}</span>
+                    </div>
+                    <div className="text-[#c7b8ea] text-xs">Gold Coins</div>
                   </div>
-                  <div className="text-[#c7b8ea] text-xs">Gold Coins</div>
-                </div>
-              </>
-            ) : (
-              <div className="flex justify-center">
-                <PixelBuddy />
-              </div>
-            )}
+                </>
+              )}
+            </div>
 
             <nav className="space-y-3">
               {navItems.map((item) => (
                 <NavButton key={item.id} item={item} />
               ))}
             </nav>
+
+            {/* Logout */}
+            <button
+              onClick={() => setCurrentView('HomePage')}
+              className="w-full flex items-center justify-center gap-3 py-4 transition-all pixel-borders bg-[#3d2661] text-white hover:bg-[#ff6b9d] mt-4"
+              style={{ cursor: 'pointer', marginTop: 'auto'}}
+            >
+              <span className="text-xs pixel-font">
+                {isSidebarHovered ? 'LOGOUT' : '↩'}
+              </span>
+            </button>
+
           </div>
         </aside>
 
+        <div className="flex fixed top-4 z-40 items-center gap-2 px-2 py-1" style={{ left: '68px' }}>
+          <Coins className="w-4 h-4 text-[#ffd93d]" />
+          <span className="text-[#ffd93d] pixel-font text-[8px]">{coins}</span>
+        </div>
+
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-8 lg:ml-8 relative">
-          
-          {/* I added a little wrapper for the Plaid Button so it matches your theme for now */}
-          <div className="mb-8 bg-[#2d1b4e] p-4 rounded-lg border-2 border-[#6b4e91] flex flex-col items-center">
+        <main className="p-4 lg:p-8 relative" style={{ marginLeft: '80px' , width: 'calc(100% - 64px)'}}>
+
+          <div className="mb-8 bg-[#2d1b4e] p-4 rounded-lg border-2 border- flex flex-col items-center">
             <h2 className="text-[#ffd93d] mb-4 pixel-font">Link Your Bank</h2>
             <PlaidButton />
           </div>
@@ -177,5 +193,6 @@ export default function App() {
         }
       `}</style>
     </div>
+    
   );
 }
