@@ -6,7 +6,6 @@ import { Shop } from './components/Shop';
 import{ LeaderBoard } from './components/LeaderBoard';
 import{HomePage} from './components/HomePage';
 import{LoginPage} from './components/LoginPage';
-import { PixelBuddy } from './components/PixelBuddy';
 
 import {
   Gamepad2,

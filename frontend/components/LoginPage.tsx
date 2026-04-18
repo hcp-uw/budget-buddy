@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
 
 interface LoginPageProps {
   onBack: () => void;
@@ -7,6 +8,7 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onBack,onLoginSuccess }: LoginPageProps) {
+  const [isSignUp, setIsSignUp] = useState(false);
   return (
     <div 
       className="fixed inset-0 overflow-hidden flex items-center justify-center"
@@ -29,7 +31,7 @@ export function LoginPage({ onBack,onLoginSuccess }: LoginPageProps) {
       >
         <button
           onClick={onBack}
-          className="absolute top-4 left-4 p-2 hover:bg-black/10 border-4 border-black"
+          className="absolute top-4 left-4 p-2"
           style={{ 
             imageRendering: 'pixelated',
             color: 'black'
@@ -133,7 +135,7 @@ export function LoginPage({ onBack,onLoginSuccess }: LoginPageProps) {
               color: 'black'
             }}
           >
-            New Player? <span className="text-purple-600 cursor-pointer hover:underline">Sign Up</span>
+            New Player? <span className="text-purple-600 cursor-pointer hover:underline" onClick={() => setIsSignUp(true)}>Sign Up</span>
           </p>
         </div>
       </motion.div>
