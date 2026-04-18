@@ -6,6 +6,7 @@ import { Shop } from './components/Shop';
 import{ LeaderBoard } from './components/LeaderBoard';
 import{HomePage} from './components/HomePage';
 import{LoginPage} from './components/LoginPage';
+import PlaidButton from './PlaidButton';
 
 import {
   Gamepad2,
@@ -169,6 +170,12 @@ export default function App() {
         </div>
 
         {/* Main Content */}
+
+        <div className="mb-8 bg-[#2d1b4e] p-4 rounded-lg border-2 border- flex flex-col items-center">
+            <h2 className="text-[#ffd93d] mb-4 pixel-font">Link Your Bank</h2>
+            <PlaidButton />
+          </div>
+
         <main className="p-4 lg:p-8 relative" style={{ marginLeft: '80px' , width: 'calc(100% - 64px)'}}>
           {currentView === 'dashboard' && <GameDashboard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} />}
           {currentView === 'quests' && <QuestBoard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} />}
