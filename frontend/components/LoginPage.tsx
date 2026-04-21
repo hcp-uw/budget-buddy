@@ -9,6 +9,10 @@ interface LoginPageProps {
 
 export function LoginPage({ onBack,onLoginSuccess }: LoginPageProps) {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
   return (
     <div 
       className="fixed inset-0 overflow-hidden flex items-center justify-center"
@@ -40,13 +44,59 @@ export function LoginPage({ onBack,onLoginSuccess }: LoginPageProps) {
           <ArrowLeft className="w-8 h-8" />
         </button>
 
-        <h2 
-          className="text-center mb-8 tracking-wider"
+        {isSignUp ? (
+          <>
+            <h2 className="text-center mb-8 tracking-wider" style={{ fontSize: '3.5rem', textShadow: '3px 3px 0px rgba(0,0,0,0.2)', fontFamily: 'monospace', color: 'black', marginTop: '30px' }}>Sign Up</h2>
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ fontFamily: 'monospace', fontWeight: '500', color: 'black' }}>Username</label>
+                <input type="text" className="w-64 p-4 border-4 border-black focus:outline-none focus:border-purple-600" placeholder="Enter username" style={{ fontFamily: 'monospace', color: 'black' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ fontFamily: 'monospace', fontWeight: '500', color: 'black' }} >Password</label>
+                <input type="password" className="w-64 p-4 border-4 border-black focus:outline-none focus:border-purple-600" placeholder="Enter password" style={{ fontFamily: 'monospace', color: 'black' }} onChange={(e) => setPassword(e.target.value)}/>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ fontFamily: 'monospace', fontWeight: '500', color: 'black' }}>Confirm Password</label>
+                <input type="password" className="w-64 p-4 border-4 border-black focus:outline-none focus:border-purple-600" placeholder="Confirm password" style={{ fontFamily: 'monospace', color: 'black' }} onChange={(e) => setConfirmPassword(e.target.value)}/>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ fontFamily: 'monospace', fontWeight: '500', color: 'black' }}>Monthly Budget Goal</label>
+                   <input type="number" className="w-64 p-4 border-4 border-black focus:outline-none focus:border-purple-600" placeholder="Enter amount ($)" style={{ fontFamily: 'monospace', color: 'black' }} />
+                </div>
+              {passwordError && (
+                <p style={{ color: 'red', fontFamily: 'monospace', fontSize: '16px' }}>{passwordError}</p>
+              )}
+              <div className='flex justify-center' style={{ marginTop: '25px' }}>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} 
+                onClick={() => {
+                  if (password !== confirmPassword) {
+                    setPasswordError('Passwords do not match!');
+                  } else {
+                    setPasswordError('');
+                    onLoginSuccess();
+                  }
+                }} 
+                className="w-64 p-4 border-4 border-black tracking-wide" style={{ background: 'rgb(242, 250, 98)', color: 'black', fontFamily: 'monospace', fontWeight: '700' }}>
+                  CREATE ACCOUNT
+                </motion.button>
+              </div>
+              <p className="text-center text-sm tracking-wide" style={{ fontFamily: 'monospace', color: 'black' }}>
+                Already have an account? <span className="text-purple-600 cursor-pointer hover:underline" onClick={() => setIsSignUp(false)}>Log In</span>
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+          <h2
           style={{
             fontSize: '3.5rem',
             textShadow: '3px 3px 0px rgba(0,0,0,0.2)',
             fontFamily: 'monospace',
             color: 'black',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             marginTop: '30px'
           }}
         >
@@ -123,7 +173,7 @@ export function LoginPage({ onBack,onLoginSuccess }: LoginPageProps) {
                 fontWeight: '700'
               }}
           >
-              START GAME
+              START BUDGET
             </motion.button>
           </div>
           
@@ -138,6 +188,8 @@ export function LoginPage({ onBack,onLoginSuccess }: LoginPageProps) {
             New Player? <span className="text-purple-600 cursor-pointer hover:underline" onClick={() => setIsSignUp(true)}>Sign Up</span>
           </p>
         </div>
+        </>
+        )}
       </motion.div>
     </div>
   );
