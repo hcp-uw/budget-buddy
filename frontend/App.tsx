@@ -3,11 +3,12 @@ import { GameDashboard } from './components/GameDashboard';
 import { QuestBoard } from './components/QuestBoard';
 import { Achievements } from './components/Achievements';
 import { Shop } from './components/Shop';
-import { LeaderBoard } from './components/LeaderBoard'; 
-import { HomePage } from './components/HomePage';
-import { LoginPage } from './components/LoginPage';
 import { PixelBuddy } from './components/PixelBuddy';
+import{ LeaderBoard } from './components/LeaderBoard';
+import{HomePage} from './components/HomePage';
+import{LoginPage} from './components/LoginPage';
 import PlaidButton from './PlaidButton';
+
 
 import {
   Gamepad2,
@@ -27,6 +28,7 @@ export default function App() {
   const [coins, setCoins] = useState(1250);
   const [xp, setXp] = useState(3450);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  const [username, setUsername] = useState('Player');
 
   const navItems = [
     { id: 'dashboard' as View, label: 'Home', icon: Gamepad2 },
@@ -150,6 +152,18 @@ export default function App() {
                 <NavButton key={item.id} item={item} />
               ))}
             </nav>
+
+            {/* Logout */}
+            <button
+              onClick={() => setCurrentView('HomePage')}
+              className="w-full flex items-center justify-center gap-3 py-4 transition-all pixel-borders bg-[#3d2661] text-white hover:bg-[#ff6b9d] mt-4"
+              style={{ cursor: 'pointer', marginTop: 'auto'}}
+            >
+              <span className="text-xs pixel-font">
+                {isSidebarHovered ? 'LOGOUT' : '↩'}
+              </span>
+            </button>
+
           </div>
         </aside>
 

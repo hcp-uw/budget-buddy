@@ -4,7 +4,7 @@ import { usePlaidLink } from 'react-plaid-link';
 const PlaidButton = () => {
   const [linkToken, setLinkToken] = useState(null);
 
-  
+  // 1. Fetch the link token from your Plaid backend (Window 1)
   useEffect(() => {
     const fetchLinkToken = async () => {
       try {
@@ -20,7 +20,7 @@ const PlaidButton = () => {
     fetchLinkToken();
   }, []);
 
-
+  // 2. Handle the success callback
   const onSuccess = useCallback(async (public_token, metadata) => {
     console.log("Success! Public Token:", public_token);
     try {
@@ -35,7 +35,7 @@ const PlaidButton = () => {
     }
   }, []);
 
-
+  // 3. Initialize Plaid Link
   const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess,
