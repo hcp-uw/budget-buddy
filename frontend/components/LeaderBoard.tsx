@@ -1,287 +1,183 @@
-import { useState } from 'react';
-import { Users, Plus } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from './supabaseClient';
+import { JoinGroup } from './JoinGroups';   
+import { CreateGroup } from './CreateGroup';
 
-interface LeaderBoardProps {
-  coins: number;
-  setCoins: (coins: number) => void;
-}
+const GroupStandings = ({ groupId, circleName }: { groupId: string, circleName: string }) => {
+  const [members, setMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-const allFriends = [
-  { name: 'User1', xp: 4200 },
-  { name: 'User5', xp: 3900 },
-  { name: 'You', xp: 3450 },
-  { name: 'User2', xp: 3100 },
-  { name: 'User6', xp: 2800 },
-  { name: 'User3', xp: 2500 },
-  { name: 'User7', xp: 2100 },
-  { name: 'User4', xp: 1800 },
-  { name: 'User8', xp: 1200 },
-  { name: 'User9', xp: 800 },
-];
+  useEffect(() => {
+    const fetchMembers = async () => {
+      if (!groupId) return;
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('leaderboard_groups')
+          .select('user_id, joined_at')
+          .eq('group_id', groupId);
 
+        if (error) throw error;
+        if (data) {
+          const mocked = data.map((m: any) => ({
+            ...m,
+            balance: Math.floor(Math.random() * 40000) + 10000 
+          })).sort((a: any, b: any) => b.balance - a.balance);
+          setMembers(mocked);
+        }
+      } catch (err) {
+        console.error("Standings Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMembers();
+  }, [groupId]);
 
-export function LeaderBoard({ coins, setCoins }: LeaderBoardProps) {
-  const [showAddFriend, setShowAddFriend] = useState(false);
-  const [friendUsername, setFriendUsername] = useState('');
-  const [showAddGroup, setShowAddGroup] = useState(false);
-  const [groupName, setGroupName] = useState('');
-  const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
-  const [groups, setGroups] = useState([
-  {
-    id: 0,
-    name: 'All Friends',
-    members: allFriends.length,
-    ranking: allFriends.map((f, i) => ({ rank: i + 1, ...f })),
-  },
-  {
-    id: 1,
-    name: 'Roommates',
-    members: 4,
-    ranking: [
-      { rank: 1, name: 'User1', xp: 4200 },
-      { rank: 2, name: 'User2', xp: 3100 },
-      { rank: 3, name: 'You', xp: 3450 },
-      { rank: 4, name: 'User4', xp: 1800 },
-    ].sort((a, b) => b.xp - a.xp).map((f, i) => ({ ...f, rank: i + 1 })),
-  },
-  {
-    id: 2,
-    name: 'College Friends',
-    members: 5,
-    ranking: [
-      { rank: 1, name: 'User5', xp: 3900 },
-      { rank: 2, name: 'You', xp: 3450 },
-      { rank: 3, name: 'User6', xp: 2800 },
-      { rank: 4, name: 'User7', xp: 2100 },
-      { rank: 5, name: 'User9', xp: 800 },
-    ].sort((a, b) => b.xp - a.xp).map((f, i) => ({ ...f, rank: i + 1 })),
-  },
-  {
-    id: 3,
-    name: 'Family',
-    members: 3,
-    ranking: [
-      { rank: 1, name: 'You', xp: 3450 },
-      { rank: 2, name: 'User3', xp: 2500 },
-      { rank: 3, name: 'User8', xp: 1200 },
-    ].sort((a, b) => b.xp - a.xp).map((f, i) => ({ ...f, rank: i + 1 })),
-  },
-  ]);
-  const [selectedGroup, setSelectedGroup] = useState(groups[0]);
-  const myRank = selectedGroup.ranking.find((r) => r.name === 'You')?.rank ?? '-';
-  const above = selectedGroup.ranking.find((r) => r.rank === (myRank as number) - 1);
+  if (!groupId) {
+    return (
+      <div className="bg-[#2d1b4e] p-10 pixel-borders w-full flex items-center justify-center min-h-[400px]">
+        <p className="text-[#c7b8ea] pixel-font text-center leading-loose">
+          NO CIRCLE SELECTED<br/>
+          <span className="text-xs opacity-50">USE THE DROPDOWN OR JOIN A NEW ONE</span>
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#ffd93d] via-[#ff6b9d] to-[#a78bfa] p-6 pixel-borders flex items-center justify-between">
-        <div>
-          <h2 className="text-[#1a0f2e] pixel-font text-lg mb-2">FRIEND GROUP</h2>
-          <p className="text-[#1a0f2e] text-sm opacity-90">Compete your saving skills with friends!</p>
-        </div>
-        <button
-          onClick={() => setShowAddFriend(true)}
-          className="bg-[#1a0f2e] text-white pixel-font text-xs px-3 py-2 pixel-borders hover:bg-[#3d2661]"
-        >
-          + ADD FRIEND
-        </button>
+    <div className="bg-[#2d1b4e] p-6 pixel-borders w-full min-h-[400px]">
+      <div className="flex justify-between items-center mb-6 border-b-2 border-[#3d2661] pb-4">
+        <h4 className="text-[#ffd93d] pixel-font text-lg">🏆 {circleName}</h4>
+        <span className="text-[#6366f1] pixel-font text-[10px]">{members.length} MEMBERS</span>
       </div>
-
-      {/* Current Ranking Banner */}
-      <div className="bg-gradient-to-r from-[#ffd93d] to-[#ff6b9d] p-4 pixel-borders border-4 border-[#ff5a8d]">
-        <h3 className="text-[#1a0f2e] pixel-font text-lg mb-2">
-          CURRENT RANKING : #{myRank} in {selectedGroup.name}
-        </h3>
-        {above && (
-          <p className="text-[#2d1b4e] text-sm">
-            Earn more XP to beat {above.name} ({above.xp} XP)!
-          </p>
-        )}
-      </div>
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Friend Groups - Left */}
-        <div className="lg:col-span-1 bg-[#2d1b4e] p-6 pixel-borders border-4 border-[#6b4e91]">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-white pixel-font text-sm">MY GROUPS</h3>
-            <button
-              onClick={() => setShowAddGroup(true)}
-              className="bg-[#ff6b9d] text-white pixel-font text-xs px-2 py-1 pixel-borders flex items-center gap-1"
-              style={{ cursor: 'pointer' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ff5a8d'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ff6b9d'}
-            >
-              <Plus className="w-3 h-3" /> NEW
-            </button>
-          </div>
-          <div className="space-y-3">
-            {groups.map((group) => (
-              <button
-                key={group.id}
-                onClick={() => setSelectedGroup(group)}
-                className={`w-full p-4 pixel-borders flex items-center justify-between transition-all ${
-                  selectedGroup.id === group.id
-                    ? 'bg-[#ff6b9d] text-white'
-                    : 'bg-[#3d2661] text-white hover:bg-[#4d3671]'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <Users className="w-4 h-4 shrink-0" />
-                  <span className="pixel-font text-xs">{group.name}</span>
-                </div>
-                <span className="text-xs opacity-70">{group.members} members</span>
-              </button>
-            ))}
-          </div>
+      
+      {loading ? (
+        <div className="text-white pixel-font text-xs p-6 text-center animate-pulse">SYNCING DATA...</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-[#c7b8ea] pixel-font text-[10px] uppercase">
+                <th className="p-2">Rank</th>
+                <th className="p-2 text-center">Member</th>
+                <th className="p-2 text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody className="pixel-font text-xs">
+              {members.length === 0 ? (
+                <tr><td colSpan={3} className="p-6 text-center text-[#c7b8ea]">Empty Circle</td></tr>
+              ) : (
+                members.map((m: any, i: number) => (
+                  <tr key={m.user_id} className={`${i === 0 ? "text-[#ffd93d]" : "text-white"} hover:bg-[#3d2661] transition-colors`}>
+                    <td className="p-3">{i === 0 ? '🥇' : i + 1}</td>
+                    <td className="p-3 text-center">{m.user_id.substring(0, 8)}...</td>
+                    <td className="p-3 text-right font-mono">${m.balance.toLocaleString()}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-
-        {/* Ranking - Right */}
-        <div className="lg:col-span-2 bg-[#2d1b4e] p-6 pixel-borders border-4 border-[#6b4e91]">
-          <h3 className="text-white pixel-font text-sm mb-6">RANKING — {selectedGroup.name}</h3>
-          <div className="space-y-3">
-            {selectedGroup.ranking.map((entry) => (
-              <div
-                key={entry.rank}
-                className={`p-4 pixel-borders flex items-center justify-between ${
-                  entry.name === 'You' ? 'bg-[#ff6b9d]/30 border-2 border-[#ff6b9d]' : 'bg-[#3d2661]'
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="text-[#fcf951] pixel-font text-lg w-6">{entry.rank}</div>
-                  <div>
-                    <div className="text-[#4ecdc4] pixel-font text-xs mb-1">{entry.name}</div>
-                    <div className="text-[#c7b8ea] text-xs">{entry.xp} XP</div>
-                  </div>
-                </div>
-                {entry.rank === 1 && <span className="text-[#ffd93d] pixel-font text-xs">👑 WINNER</span>}
-                {entry.name === 'You' && entry.rank !== 1 && <span className="text-[#ff6b9d] pixel-font text-xs">← YOU</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-
-      {showAddFriend && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-        <div className="bg-[#2d1b4e] pixel-borders border-4 border-[#6b4e91]" style={{ width: '400px', padding: '40px' }}>
-          <h3 className="text-white pixel-font text-sm mb-6">ADD FRIEND</h3>
-          <input
-            type="text"
-            value={friendUsername}
-            onChange={(e) => setFriendUsername(e.target.value)}
-            placeholder="Enter username..."
-            className="w-full p-3 bg-[#1a0f2e] text-white pixel-font text-sm border-4 border-[#6b4e91] mb-4 focus:outline-none focus:border-[#ff6b9d]"
-          />
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                setShowAddFriend(false);
-                setFriendUsername('');
-              }}
-              className="flex-1 bg-[#ff6b9d] text-white pixel-font text-xs py-2 pixel-borders hover:bg-[#ff5a8d]"
-            >
-              ADD
-            </button>
-            <button
-              onClick={() => setShowAddFriend(false)}
-              className="flex-1 bg-[#3d2661] text-white pixel-font text-xs py-2 pixel-borders hover:bg-[#4d3671]"
-            >
-              CANCEL
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-      {showAddGroup && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-        <div className="bg-[#2d1b4e] pixel-borders border-4 border-[#6b4e91]" style={{ width: '600px', padding: '40px', maxHeight: '80vh', overflowY: 'auto' }}>
-          <h3 className="text-white pixel-font text-sm mb-6">CREATE NEW GROUP</h3>
-          
-          <input
-            type="text"
-            value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
-            placeholder="Enter group name..."
-            className="w-full p-3 bg-[#1a0f2e] text-white pixel-font text-sm border-4 border-[#6b4e91] mb-6 focus:outline-none focus:border-[#ff6b9d]"
-          />
-
-          <h4 className="text-[#c7b8ea] pixel-font text-xs mb-3">SELECT FRIENDS</h4>
-          <div style={{ maxHeight: '250px', overflowY: 'auto' }} className="space-y-2 mb-6">
-          {allFriends.filter(f => f.name !== 'You').sort((a, b) => a.name.localeCompare(b.name)).map((friend) => (
-              <div
-                key={friend.name}
-                className="bg-[#3d2661] p-3 pixel-borders flex items-center justify-between cursor-pointer"
-                onClick={() => {
-                  setSelectedFriends(prev =>
-                    prev.includes(friend.name)
-                      ? prev.filter(n => n !== friend.name)
-                      : [...prev, friend.name]
-                  );
-                }}
-              >
-                <div>
-                  <div className="text-[#4ecdc4] pixel-font text-xs">{friend.name}</div>
-                  <div className="text-[#c7b8ea] text-xs">{friend.xp} XP</div>
-                </div>
-                <div
-                  className="w-5 h-5 border-2 border-[#6b4e91] flex items-center justify-center"
-                  style={{ backgroundColor: selectedFriends.includes(friend.name) ? '#ff6b9d' : 'transparent' }}
-                >
-                  {selectedFriends.includes(friend.name) && <span className="text-white text-xs">✓</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-  if (groupName.trim()) {
-    const newGroup = {
-      id: groups.length + 1,
-      name: groupName,
-      members: selectedFriends.length + 1,
-      ranking: [
-        { rank: 1, name: 'You', xp: 3450 },
-        ...selectedFriends.map((name, i) => ({
-          rank: i + 2,
-          name,
-          xp: allFriends.find(f => f.name === name)?.xp ?? 0,
-        })),
-      ].sort((a, b) => b.xp - a.xp).map((f, i) => ({ ...f, rank: i + 1 })),
-    };
-    setGroups(prev => [...prev, newGroup]);
-    setSelectedGroup(newGroup);
-  }
-  setShowAddGroup(false);
-  setGroupName('');
-  setSelectedFriends([]);
-}}
-              className="flex-1 bg-[#ff6b9d] text-white pixel-font text-xs py-2 pixel-borders"
-              style={{ cursor: 'pointer' }}
-            >
-              CREATE
-            </button>
-            <button
-              onClick={() => {
-                setShowAddGroup(false);
-                setGroupName('');
-                setSelectedFriends([]);
-              }}
-              className="flex-1 bg-[#3d2661] text-white pixel-font text-xs py-2 pixel-borders"
-              style={{ cursor: 'pointer' }}
-            >
-              CANCEL
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-   </div>
+      )}
+    </div>
   );
-}
+};
+
+export const LeaderBoard = ({ coins, setCoins }: { coins: number; setCoins: any }) => {
+  const USER_ID = "eb18528f-81cd-4f3a-9af8-fe5603938070"; 
+  const [myGroups, setMyGroups] = useState<any[]>([]);
+  const [activeGroup, setActiveGroup] = useState<{id: string, name: string}>({ id: "", name: "" });
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Fetch all groups this user is a member of
+  const fetchMyGroups = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('leaderboard_groups')
+        .select(`
+          group_id,
+          groups ( id, name )
+        `)
+        .eq('user_id', USER_ID);
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedGroups = data.map((item: any) => item.groups).filter(Boolean);
+        setMyGroups(formattedGroups);
+        
+        // Auto-select the first group if nothing is selected
+        if (formattedGroups.length > 0 && isInitialLoad) {
+          setActiveGroup(formattedGroups[0]);
+          setIsInitialLoad(false);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching my groups:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyGroups();
+  }, []);
+
+  const handleGroupUpdate = (id: string, name: string) => {
+    // When a user joins/creates, refresh the list and switch view
+    fetchMyGroups();
+    setActiveGroup({ id, name });
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto p-4 md:p-8 relative z-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div>
+          <h1 className="text-[#ffd93d] pixel-font text-3xl mb-2">Friends & Circles</h1>
+          <p className="text-[#c7b8ea] pixel-font text-[10px] uppercase tracking-widest">Compete with your crew</p>
+        </div>
+
+        {/* Dropdown Selector */}
+        <div className="relative min-w-[250px]">
+          <label className="block text-[#ffd93d] pixel-font text-[10px] mb-2">Switch Circle:</label>
+          <select 
+            value={activeGroup.id}
+            onChange={(e) => {
+              const selected = myGroups.find(g => g.id === e.target.value);
+              if (selected) setActiveGroup(selected);
+            }}
+            className="w-full bg-[#1a0f2e] text-white p-3 pixel-borders pixel-font text-xs outline-none appearance-none cursor-pointer hover:border-[#6366f1]"
+          >
+            {myGroups.length === 0 && <option value="">No Circles Joined</option>}
+            {myGroups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name.toUpperCase()}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-4 bottom-4 pointer-events-none text-[#6366f1]">▼</div>
+        </div>
+      </div>
+      
+      {/* Layout Grid - Fixed to prevent overlap */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Actions (Span 4) */}
+        <div className="lg:col-span-4 space-y-8">
+          <section>
+            <JoinGroup userId={USER_ID} onSuccess={handleGroupUpdate} />
+          </section>
+          <section>
+            <CreateGroup userId={USER_ID} onSuccess={handleGroupUpdate} />
+          </section>
+        </div>
+
+        {/* Right Column: Standings (Span 8) */}
+        <div className="lg:col-span-8 h-full">
+          <GroupStandings 
+            groupId={activeGroup.id} 
+            circleName={activeGroup.name} 
+          />
+        </div>
+      </div>
+    </div>
+  );
+};

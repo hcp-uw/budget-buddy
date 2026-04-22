@@ -138,7 +138,7 @@ h1, h2, h3, h4, th, strong {
   margin: 0 0 15px 0;
 }
 
-/* Red Code Badge */
+
 .leaderboard-code-badge {
   display: inline-block;
   font-family: 'SF Mono', 'Fira Code', monospace;
@@ -147,12 +147,12 @@ h1, h2, h3, h4, th, strong {
   border: 1px solid #fca5a5 !important;
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 1.1rem; /* Increased badge size */
+  font-size: 1.1rem;
   font-weight: 600 !important;
   letter-spacing: 1px;
 }
 
-/* --- 7. LEADERBOARD TABLE STYLING --- */
+
 .leaderboard-wrapper {
   margin-top: 40px;
   border: 1px solid #f1f5f9;
@@ -163,7 +163,7 @@ h1, h2, h3, h4, th, strong {
 
 .leaderboard-wrapper h4 {
   text-align: center;
-  font-size: 2rem; /* Increased Standings title size */
+  font-size: 2rem; 
   margin-top: 0;
   margin-bottom: 35px;
   letter-spacing: -0.5px;
@@ -208,7 +208,7 @@ h1, h2, h3, h4, th, strong {
   font-weight: 700 !important; /* Made balance slightly bolder for impact */
 }
 
-/* The Gold Winner Row */
+
 .top-rank td {
   background-color: #fefce8 !important; 
   border-bottom: 1px solid #fef08a !important;

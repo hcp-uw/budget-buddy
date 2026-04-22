@@ -3,9 +3,10 @@ import { GameDashboard } from './components/GameDashboard';
 import { QuestBoard } from './components/QuestBoard';
 import { Achievements } from './components/Achievements';
 import { Shop } from './components/Shop';
-import{ LeaderBoard } from './components/LeaderBoard';
-import{HomePage} from './components/HomePage';
-import{LoginPage} from './components/LoginPage';
+import { LeaderBoard } from './components/LeaderBoard';
+import { HomePage } from './components/HomePage';
+import { LoginPage } from './components/LoginPage';
+import PlaidButton from './PlaidButton';
 
 import {
   Gamepad2,
@@ -40,13 +41,13 @@ export default function App() {
   }
 
   if (currentView === 'LoginPage') {
-  return (
-    <LoginPage
-      onBack={() => setCurrentView('HomePage')}
-      onLoginSuccess={() => setCurrentView('dashboard')}
-    />
-  );
-}
+    return (
+      <LoginPage
+        onBack={() => setCurrentView('HomePage')}
+        onLoginSuccess={() => setCurrentView('dashboard')}
+      />
+    );
+  }
 
   const NavButton = ({ item }: { item: typeof navItems[0] }) => {
     const Icon = item.icon;
@@ -57,24 +58,23 @@ export default function App() {
           setIsMenuOpen(false);
         }}
         className={`w-full flex items-center justify-center gap-3 py-4 transition-all pixel-borders ${
-        currentView === item.id
-          ? 'bg-[#ff6b9d] text-white'
-          : 'bg-[#3d2661] text-white hover:bg-[#4d3671]'
-      }`}
-    >
-      <Icon className="w-5 h-5 shrink-0" />
-      {isSidebarHovered && (
-        <span className="text-xs pixel-font whitespace-nowrap">{item.label}</span>
-      )}
-    </button>
+          currentView === item.id
+            ? 'bg-[#ff6b9d] text-white'
+            : 'bg-[#3d2661] text-white hover:bg-[#4d3671]'
+        }`}
+      >
+        <Icon className="w-5 h-5 shrink-0" />
+        {isSidebarHovered && (
+          <span className="text-xs pixel-font whitespace-nowrap">{item.label}</span>
+        )}
+      </button>
     );
   };
-  
-  return (
 
-    <div className="min-h-screen bg-[#1a0f2e]">
+  return (
+    <div className="min-h-screen bg-[#1a0f2e] overflow-x-hidden">
       {/* Stars Background */}
-      <div className="fixed inset-0 z-0">
+      <div className="fixed inset-0 z-0 pointer-events-none">
         {[...Array(50)].map((_, i) => (
           <div
             key={i}
@@ -126,7 +126,10 @@ export default function App() {
           onMouseEnter={() => setIsSidebarHovered(true)}
           onMouseLeave={() => setIsSidebarHovered(false)}
         >
-          <div className={`${isSidebarHovered ? 'p-6' : 'p-2'}`} style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <div
+            className={`${isSidebarHovered ? 'p-6' : 'p-2'}`}
+            style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}
+          >
             <div style={{ height: '160px' }}>
               {isSidebarHovered && (
                 <>
@@ -153,34 +156,39 @@ export default function App() {
             <button
               onClick={() => setCurrentView('HomePage')}
               className="w-full flex items-center justify-center gap-3 py-4 transition-all pixel-borders bg-[#3d2661] text-white hover:bg-[#ff6b9d] mt-4"
-              style={{ cursor: 'pointer', marginTop: 'auto'}}
+              style={{ cursor: 'pointer', marginTop: 'auto' }}
             >
               <span className="text-xs pixel-font">
                 {isSidebarHovered ? 'LOGOUT' : '↩'}
               </span>
             </button>
-
           </div>
         </aside>
 
-        <div className="flex fixed top-4 z-40 items-center gap-2 px-2 py-1" style={{ left: '68px' }}>
+        {/* Floating Coins (collapsed sidebar) */}
+        <div
+          className="flex fixed top-4 z-40 items-center gap-2 px-2 py-1"
+          style={{ left: '68px' }}
+        >
           <Coins className="w-4 h-4 text-[#ffd93d]" />
           <span className="text-[#ffd93d] pixel-font text-[8px]">{coins}</span>
         </div>
 
         {/* Main Content */}
-
-        {/* <div className="mb-8 bg-[#2d1b4e] p-4 rounded-lg border-2 border- flex flex-col items-center">
+        <main
+          className="p-4 lg:p-8 relative"
+          style={{ marginLeft: '80px', width: 'calc(100% - 64px)' }}
+        >
+          <div className="mb-8 bg-[#2d1b4e] p-4 rounded-lg border-2 border-[#6b4e91] flex flex-col items-center">
             <h2 className="text-[#ffd93d] mb-4 pixel-font">Link Your Bank</h2>
             <PlaidButton />
-          </div> */}
+          </div>
 
-        <main className="p-4 lg:p-8 relative" style={{ marginLeft: '80px' , width: 'calc(100% - 64px)'}}>
           {currentView === 'dashboard' && <GameDashboard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} />}
           {currentView === 'quests' && <QuestBoard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} />}
           {currentView === 'achievements' && <Achievements />}
           {currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} />}
-          {currentView === 'friends' && <LeaderBoard coins={coins} setCoins={setCoins}/>}
+          {currentView === 'friends' && <LeaderBoard coins={coins} setCoins={setCoins} />}
         </main>
       </div>
 
@@ -191,6 +199,5 @@ export default function App() {
         }
       `}</style>
     </div>
-    
   );
 }
