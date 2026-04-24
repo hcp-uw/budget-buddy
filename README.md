@@ -74,13 +74,15 @@ cd budget-buddy/frontend
 
 # Install dependencies
 npm install
-
-# Create an env file in frontend folder and paste your keys
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_publishable_key
+# Create an env file in frontend folder and paste your keys ( Example Below )
 # Launch Budget Buddy
 npm run dev
 ```
+
+Put these in /frontend/.env: VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_publishable_key
+
+
 ### 3. Contributors
 Sathvik Kotapati, Nini Le, Kaitlin Qu, Abhinav Damarla, Divyansh Kamboj, Sydney Vo, Ruoying Wu
 ### 4. Licenses
