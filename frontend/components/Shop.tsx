@@ -8,7 +8,8 @@ import {
   Star,
   Zap,
   Shield,
-  Heart
+  Heart,
+  Glasses
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -119,7 +120,18 @@ export function Shop({ coins, setCoins }: ShopProps) {
       category: 'cosmetic',
       color: '#ffd93d',
       owned: false
-    }
+    },
+    {
+      id: 10,
+      name: 'Sunglasses',
+      description: 'Cool shades for your avatar',
+      price: 180,
+      icon: Glasses,
+      category: 'cosmetic',
+      color: '#4ecdc4',
+      owned: false
+},
+
   ]);
 
   const purchaseItem = (itemId: number) => {
@@ -157,7 +169,8 @@ export function Shop({ coins, setCoins }: ShopProps) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="flex gap-6">
+      <div className="flex-1 space-y-6">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#ffd93d] to-[#ff6b9d] p-6 pixel-borders">
         <div className="flex items-center justify-between">
@@ -273,6 +286,31 @@ export function Shop({ coins, setCoins }: ShopProps) {
             <button className="bg-white text-[#a78bfa] px-6 py-3 pixel-borders pixel-font text-xs hover:bg-[#ffd93d] hover:text-[#1a0f2e] transition-colors">
               BUY NOW
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      {/* Inventory Panel */}
+      <div className="w-64 shrink-0">
+  <div className="bg-[#2d1b4e] p-4 pixel-borders border-4 border-[#6b4e91]" style={{ height: '600px', overflowY: 'auto' }}>
+          <h3 className="text-white pixel-font text-sm mb-4">MY INVENTORY</h3>
+          <div className="space-y-3">
+            {items.filter(item => item.owned).length === 0 ? (
+              <p className="text-[#c7b8ea] text-xs">No items owned yet!</p>
+            ) : (
+              items.filter(item => item.owned).map(item => {
+                const ItemIcon = item.icon;
+                return (
+                  <div key={item.id} className="bg-[#3d2661] p-3 pixel-borders flex items-center gap-3">
+                    <div className="w-8 h-8 pixel-borders flex items-center justify-center" style={{ backgroundColor: item.color + '40' }}>
+                      <ItemIcon className="w-4 h-4" style={{ color: item.color }} />
+                    </div>
+                    <span className="text-white pixel-font text-xs">{item.name}</span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

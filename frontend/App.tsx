@@ -165,6 +165,15 @@ export default function App() {
           </div>
         </aside>
 
+        <div style={{ position: 'fixed', left: '92px', top: '50%', transform: 'translateY(-50%)', zIndex: 45, width: '364px', height: '750px', 
+          display: 'flex', justifyContent: 'center', border: '4px solid #6b4e91', backgroundColor: '#2d1b4e', padding: '8px', paddingTop: '100px'  }}>
+  <img 
+    src="/Moolah.png" 
+    alt="Moolah"
+    style={{ imageRendering: 'pixelated', width: '500px', height: '510px' }} 
+  />
+</div>
+
         {/* Floating Coins (collapsed sidebar) */}
         <div
           className="flex fixed top-4 z-40 items-center gap-2 px-2 py-1"
@@ -177,7 +186,7 @@ export default function App() {
         {/* Main Content */}
         <main
           className="p-4 lg:p-8 relative"
-          style={{ marginLeft: '80px', width: 'calc(100% - 64px)' }}
+          style={{ marginLeft: '450px', width: 'calc(100% - 400px)' }}
         >
           <div className="mb-8 bg-[#2d1b4e] p-4 rounded-lg border-2 border-[#6b4e91] flex flex-col items-center">
             <h2 className="text-[#ffd93d] mb-4 pixel-font">Link Your Bank</h2>
