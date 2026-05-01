@@ -60,6 +60,46 @@ app.post('/api/create_link_token', async (req, res) => {
   }
 });
 
+// NEW: Create or get user by email
+app.post('/api/create_user', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if user exists
+    const { data: existingUser, error: selectError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (existingUser) {
+      console.log('✅ User already exists:', email);
+      return res.json(existingUser);
+    }
+
+    // Create new user
+    const { data: newUser, error: createError } = await supabase
+      .from('users')
+      .insert([{ email }])
+      .select()
+      .single();
+
+    if (createError) {
+      throw createError;
+    }
+
+    console.log('✅ New user created:', email);
+    res.json(newUser);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: error.message || 'Failed to create user' });
+  }
+});
+
 app.post('/api/info', (req, res) => {
   res.json({
     item_id: ITEM_ID,
@@ -90,6 +130,9 @@ app.get('/api/debug/plaid-items', async (req, res) => {
 app.post('/api/set_access_token', function (request, response, next) {
   console.log('Full request body:', request.body)  
   PUBLIC_TOKEN = request.body.public_token;
+  const userId = request.body.user_id;
+  const institutionName = request.body.institution_name || 'unknown';
+  
   Promise.resolve()
     .then(async function () {
       const tokenResponse = await plaidClient.itemPublicTokenExchange({
@@ -98,13 +141,16 @@ app.post('/api/set_access_token', function (request, response, next) {
       ACCESS_TOKEN = tokenResponse.data.access_token;
       ITEM_ID = tokenResponse.data.item_id;
 
+      // Use provided userId, fallback to default if not provided
+      const finalUserId = userId || '4daed9c1-65c8-4348-9951-7d0df4852110';
+
       const { data, error } = await supabase
         .from('plaid_items')
         .insert({
-          user_id: '4daed9c1-65c8-4348-9951-7d0df4852110',
-          access_token: ACCESS_TOKEN,
+          user_id: finalUserId,
+          plaid_access_token: ACCESS_TOKEN,
           plaid_item_id: ITEM_ID,
-          institution_name: 'unknown',
+          institution_name: institutionName,
           status: 'connected'
         })
         .select()
