@@ -41,6 +41,7 @@ export default function App() {
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [totalSpent, setTotalSpent] = useState(0);
   const [monthlyBudget, setMonthlyBudget] = useState(2000);
+  const [cowFilter, setCowFilter] = useState('');
 
   const navItems = [
     { id: 'dashboard' as View, label: 'Home', icon: Gamepad2 },
@@ -219,7 +220,7 @@ export default function App() {
   <img 
     src="/Moolah.png" 
     alt="Moolah"
-    style={{ imageRendering: 'pixelated', width: '500px', height: '510px' }} 
+    style={{ imageRendering: 'pixelated', width: '500px', height: '510px', filter: cowFilter }} 
   />
 </div>
 
@@ -240,7 +241,7 @@ export default function App() {
           {currentView === 'dashboard' && <GameDashboard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} initialBudget={monthlyBudget} transactions={userTransactions} />}
           {currentView === 'quests' && <QuestBoard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} transactions={userTransactions} budget={monthlyBudget} />}
           {currentView === 'achievements' && <Achievements />}
-          {currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} />}
+          {currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} setCowFilter={setCowFilter} cowFilter={cowFilter} />}{currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} setCowFilter={setCowFilter} />}
           {currentView === 'friends' && <LeaderBoard coins={coins} setCoins={setCoins} />}
           {currentView === 'profile' && <ProfilePage username={username} />}
         </main>

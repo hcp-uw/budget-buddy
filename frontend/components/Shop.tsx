@@ -22,14 +22,17 @@ interface ShopItem {
   category: 'cosmetic' | 'boost' | 'power-up';
   color: string;
   owned: boolean;
+  filter?: string;
 }
 
 interface ShopProps {
   coins: number;
   setCoins: (coins: number) => void;
+  setCowFilter: (filter: string) => void;
+  cowFilter: string;
 }
 
-export function Shop({ coins, setCoins }: ShopProps) {
+export function Shop({ coins, setCoins, setCowFilter, cowFilter }: ShopProps) {
   const [items, setItems] = useState<ShopItem[]>([
     {
       id: 1,
@@ -43,13 +46,14 @@ export function Shop({ coins, setCoins }: ShopProps) {
     },
     {
       id: 2,
-      name: 'Pink Avatar',
-      description: 'Change your avatar color to pink',
+      name: 'Green Avatar',
+      description: 'Change your avatar color to green',
       price: 100,
       icon: Palette,
       category: 'cosmetic',
       color: '#ff6b9d',
-      owned: false
+      owned: false,
+      filter: 'sepia(1) hue-rotate(390deg) saturate(3)'
     },
     {
       id: 3,
@@ -228,8 +232,10 @@ export function Shop({ coins, setCoins }: ShopProps) {
                         />
                       </div>
                       {item.owned && (
-                        <div className="bg-[#4ecdc4] px-2 py-1 pixel-borders">
-                          <span className="text-[#1a0f2e] pixel-font text-xs">OWNED</span>
+                        <div className="flex flex-col gap-1">
+                          <div className="bg-[#4ecdc4] px-2 py-1 pixel-borders">
+                            <span className="text-[#1a0f2e] pixel-font text-xs">OWNED</span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -302,7 +308,15 @@ export function Shop({ coins, setCoins }: ShopProps) {
               items.filter(item => item.owned).map(item => {
                 const ItemIcon = item.icon;
                 return (
-                  <div key={item.id} className="bg-[#3d2661] p-3 pixel-borders flex items-center gap-3">
+                  <div 
+                    key={item.id} 
+                    className="p-3 pixel-borders flex items-center gap-3"
+                    style={{ 
+                      cursor: 'pointer',
+                      backgroundColor: cowFilter === item.filter ? '#7a6b00' : '#3d2661'
+                    }}
+                    onClick={() => setCowFilter(prev => prev === (item.filter || '') ? '' : (item.filter || ''))}
+                  >
                     <div className="w-8 h-8 pixel-borders flex items-center justify-center" style={{ backgroundColor: item.color + '40' }}>
                       <ItemIcon className="w-4 h-4" style={{ color: item.color }} />
                     </div>
