@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GameDashboard } from './components/GameDashboard';
 import { QuestBoard } from './components/QuestBoard';
 import { Achievements } from './components/Achievements';
 import { Shop } from './components/Shop';
 import { LeaderBoard } from './components/LeaderBoard';
-import { HomePage } from './components/HomePage';
 import { LoginPage } from './components/LoginPage';
 import { ProfilePage } from './components/ProfilePage';
 import PlaidButton from './PlaidButton';
+import { calculateMonthlySpent } from './components/databaseService';
 
 import {
   Gamepad2,
@@ -20,15 +20,26 @@ import {
   User
 } from 'lucide-react';
 
-type View = 'HomePage' | 'LoginPage' | 'dashboard' | 'quests' | 'achievements' | 'shop' | 'friends' | 'profile';
+type View ='login' | 'dashboard' | 'quests' | 'achievements' | 'shop' | 'friends' | 'profile';
+
+interface UserData {
+  userId: string;
+  email: string;
+  transactions: any[];
+}
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<View>('HomePage');
+  const [currentView, setCurrentView] = useState<View>('login');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [coins, setCoins] = useState(1250);
   const [xp, setXp] = useState(3450);
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [username, setUsername] = useState('Player');
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userTransactions, setUserTransactions] = useState<any[]>([]);
+  const [totalSpent, setTotalSpent] = useState(0);
+  const [monthlyBudget, setMonthlyBudget] = useState(2000);
 
   const navItems = [
     { id: 'dashboard' as View, label: 'Home', icon: Gamepad2 },
@@ -39,15 +50,30 @@ export default function App() {
     { id: 'profile' as View, label: 'Profile', icon: User },
   ];
 
-  if (currentView === 'HomePage') {
-    return <HomePage onPlayClick={() => setCurrentView('LoginPage')} />;
-  }
+  // Calculate spent whenever transactions change
+  useEffect(() => {
+    if (userTransactions.length > 0) {
+      const spent = calculateMonthlySpent(userTransactions);
+      setTotalSpent(spent);
+    }
+  }, [userTransactions]);
 
-  if (currentView === 'LoginPage') {
+  // Show login page
+  if (currentView === 'login') {
     return (
-      <LoginPage
-        onBack={() => setCurrentView('HomePage')}
-        onLoginSuccess={() => setCurrentView('dashboard')}
+      <LoginPage 
+        onBack={() => {
+          setUsername('Player');
+          setUserId(null);
+          setUserEmail(null);
+          setUserTransactions([]);
+        }}
+        onLoginSuccess={(budget: number, transactions: any[], userName: string) => {
+          setMonthlyBudget(budget);
+          setUserTransactions(transactions);
+          setUsername(userName);
+          setCurrentView('dashboard');
+        }}
       />
     );
   }
@@ -157,7 +183,7 @@ export default function App() {
 
             {/* Logout */}
             <button
-              onClick={() => setCurrentView('HomePage')}
+              onClick={() => setCurrentView('login')}
               className="w-full flex items-center justify-center gap-3 py-4 transition-all pixel-borders bg-[#3d2661] text-white hover:bg-[#ff6b9d] mt-4"
               style={{ cursor: 'pointer', marginTop: 'auto' }}
             >
@@ -191,13 +217,8 @@ export default function App() {
           className="p-4 lg:p-8 relative"
           style={{ marginLeft: '450px', width: 'calc(100% - 400px)' }}
         >
-          <div className="mb-8 bg-[#2d1b4e] p-4 rounded-lg border-2 border-[#6b4e91] flex flex-col items-center">
-            <h2 className="text-[#ffd93d] mb-4 pixel-font">Link Your Bank</h2>
-            <PlaidButton />
-          </div>
-
-          {currentView === 'dashboard' && <GameDashboard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} />}
-          {currentView === 'quests' && <QuestBoard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} />}
+          {currentView === 'dashboard' && <GameDashboard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} initialBudget={monthlyBudget} transactions={userTransactions} />}
+          {currentView === 'quests' && <QuestBoard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} transactions={userTransactions} budget={monthlyBudget} />}
           {currentView === 'achievements' && <Achievements />}
           {currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} />}
           {currentView === 'friends' && <LeaderBoard coins={coins} setCoins={setCoins} />}

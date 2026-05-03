@@ -21,22 +21,49 @@ interface Quest {
   completed: boolean;
 }
 
+interface Transaction {
+  transaction_id?: string;
+  name?: string;
+  merchant_name?: string;
+  amount?: number;
+  date?: string;
+  category?: string[];
+  personal_finance_category?: { primary?: string };
+}
+
 interface QuestBoardProps {
   coins: number;
   setCoins: (coins: number) => void;
   xp: number;
   setXp: (xp: number) => void;
+  transactions?: Transaction[];
+  budget?: number;
 }
 
-export function QuestBoard({ coins, setCoins, xp, setXp }: QuestBoardProps) {
+export function QuestBoard({ coins, setCoins, xp, setXp, transactions = [], budget = 2000 }: QuestBoardProps) {
+  const hasReal = transactions.length > 0;
+
+  // Derive real progress values from Plaid transactions
+  const txCount = transactions.length;
+  const totalSpent = transactions.reduce((s, t) => s + (t.amount && t.amount > 0 ? t.amount : 0), 0);
+  const remaining = budget - totalSpent;
+  const savedAmount = Math.max(0, remaining);
+
+  // Today's spending (transactions from today)
+  const today = new Date().toISOString().split('T')[0];
+  const spentToday = transactions
+    .filter(t => t.date === today && (t.amount ?? 0) > 0)
+    .reduce((s, t) => s + (t.amount ?? 0), 0);
+  const savedToday = Math.max(0, 20 - spentToday); // quest goal: save $20 today (spend <$20)
+
   const [quests, setQuests] = useState<Quest[]>([
     {
       id: 1,
       title: 'Daily Saver',
-      description: 'Save $20 today',
+      description: 'Keep spending under $20 today',
       xpReward: 50,
       coinReward: 25,
-      progress: 15,
+      progress: hasReal ? Math.min(Math.round(savedToday), 20) : 15,
       total: 20,
       difficulty: 'easy',
       timeLeft: '6h left',
@@ -45,10 +72,10 @@ export function QuestBoard({ coins, setCoins, xp, setXp }: QuestBoardProps) {
     {
       id: 2,
       title: 'Budget Master',
-      description: 'Stay under budget for 7 days',
+      description: 'Stay under your monthly budget',
       xpReward: 200,
       coinReward: 100,
-      progress: 5,
+      progress: hasReal ? (remaining >= 0 ? 7 : Math.max(0, Math.round(7 * (remaining + budget) / budget))) : 5,
       total: 7,
       difficulty: 'hard',
       timeLeft: '2d left',
@@ -57,10 +84,10 @@ export function QuestBoard({ coins, setCoins, xp, setXp }: QuestBoardProps) {
     {
       id: 3,
       title: 'Expense Tracker',
-      description: 'Log 10 transactions',
+      description: 'Log 10 transactions via your bank',
       xpReward: 75,
       coinReward: 40,
-      progress: 7,
+      progress: hasReal ? Math.min(txCount, 10) : 7,
       total: 10,
       difficulty: 'easy',
       completed: false
@@ -68,10 +95,10 @@ export function QuestBoard({ coins, setCoins, xp, setXp }: QuestBoardProps) {
     {
       id: 4,
       title: 'Goal Getter',
-      description: 'Reach your monthly savings goal',
+      description: `Save $500 this month`,
       xpReward: 300,
       coinReward: 150,
-      progress: 450,
+      progress: hasReal ? Math.min(Math.round(savedAmount), 500) : 450,
       total: 500,
       difficulty: 'hard',
       timeLeft: '5d left',
@@ -80,10 +107,15 @@ export function QuestBoard({ coins, setCoins, xp, setXp }: QuestBoardProps) {
     {
       id: 5,
       title: 'Smart Shopper',
-      description: 'Use 3 coupons this week',
+      description: 'Make fewer than 3 shopping transactions',
       xpReward: 100,
       coinReward: 50,
-      progress: 2,
+      progress: hasReal
+        ? Math.min(transactions.filter(t => {
+            const c = (t.personal_finance_category?.primary || t.category?.[0] || '').toLowerCase();
+            return c.includes('shop') || c.includes('merchan');
+          }).length, 3)
+        : 2,
       total: 3,
       difficulty: 'medium',
       timeLeft: '3d left',
@@ -123,8 +155,17 @@ export function QuestBoard({ coins, setCoins, xp, setXp }: QuestBoardProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#a78bfa] to-[#ff6b9d] p-6 pixel-borders">
-        <h2 className="text-white pixel-font text-lg mb-2">QUEST BOARD</h2>
-        <p className="text-white text-sm opacity-90">Complete quests to earn XP & coins!</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-white pixel-font text-lg mb-2">QUEST BOARD</h2>
+            <p className="text-white text-sm opacity-90">Complete quests to earn XP & coins!</p>
+          </div>
+          {hasReal && (
+            <div className="bg-white/20 px-3 py-1 pixel-borders">
+              <span className="text-white pixel-font text-xs">⚡ LIVE DATA</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Daily Quest Highlight */}

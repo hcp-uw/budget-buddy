@@ -6,39 +6,83 @@ import {
   Flame,
   Star,
   Award,
-  Sparkles
+  Sparkles,
+  ShoppingCart,
+  Utensils,
+  Car,
+  Home,
+  Wifi,
+  HelpCircle
 } from 'lucide-react';
+
+interface Transaction {
+  transaction_id?: string;
+  name?: string;
+  merchant_name?: string;
+  amount?: number;
+  date?: string;
+  category?: string[];
+  personal_finance_category?: { primary?: string };
+}
 
 interface GameDashboardProps {
   coins: number;
   setCoins: (coins: number) => void;
   xp: number;
   setXp: (xp: number) => void;
+  initialBudget?: number;
+  transactions?: Transaction[];
 }
 
-const stats = [
-  { label: 'Saved This Month', value: '$450', icon: TrendingUp, color: '#4ecdc4', xp: '+120 XP' },
-  { label: 'Active Streak', value: '15 days', icon: Flame, color: '#ff6b9d', xp: 'Keep it up!' },
-  { label: 'Goals Complete', value: '3/5', icon: Target, color: '#ffd93d', xp: '60%' },
-  { label: 'Daily Quest', value: 'Done!', icon: Star, color: '#a78bfa', xp: '+50 XP' },
-];
+// Map Plaid categories to icons + colors
+function getCategoryIcon(tx: Transaction) {
+  const cat = (tx.personal_finance_category?.primary || tx.category?.[0] || '').toLowerCase();
+  if (cat.includes('food') || cat.includes('restaurant') || cat.includes('dining'))
+    return { icon: Utensils, color: '#ff6b9d' };
+  if (cat.includes('shop') || cat.includes('merchan'))
+    return { icon: ShoppingCart, color: '#a78bfa' };
+  if (cat.includes('travel') || cat.includes('transport') || cat.includes('auto'))
+    return { icon: Car, color: '#ffd93d' };
+  if (cat.includes('rent') || cat.includes('housing') || cat.includes('home'))
+    return { icon: Home, color: '#4ecdc4' };
+  if (cat.includes('util') || cat.includes('phone') || cat.includes('internet'))
+    return { icon: Wifi, color: '#34d399' };
+  return { icon: HelpCircle, color: '#c7b8ea' };
+}
 
-const recentActivity = [
-  { id: 1, action: 'Completed "Save $50"', reward: '+50 XP, +25 coins', time: '2 hours ago', type: 'quest' },
-  { id: 2, action: 'Unlocked "Penny Pincher"', reward: '+100 XP', time: '1 day ago', type: 'achievement' },
-  { id: 3, action: 'Daily login streak!', reward: '+30 XP, +10 coins', time: '1 day ago', type: 'bonus' },
-  { id: 4, action: 'Saved on groceries', reward: '+25 XP, +15 coins', time: '2 days ago', type: 'bonus' },
-];
+function formatDate(dateStr?: string) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
-export function GameDashboard({ coins, setCoins, xp, setXp }: GameDashboardProps) {
+export function GameDashboard({ coins, setCoins, xp, setXp, initialBudget = 2000, transactions = [] }: GameDashboardProps) {
   const [level] = useState(12);
   const currentLevelXP = 3000;
   const nextLevelXP = 4000;
   const xpProgress = ((xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
-  const [budget, setBudget] = useState(2000);
-  const [spent] = useState(1550);
+  const [budget, setBudget] = useState(initialBudget);
+
+  // Compute spent from real transactions (positive amounts = spending in Plaid)
+  const spent = transactions.length > 0
+    ? transactions.reduce((sum, tx) => sum + (tx.amount && tx.amount > 0 ? tx.amount : 0), 0)
+    : 1550;
+
+  const remaining = budget - spent;
+  const spentPercent = Math.min((spent / budget) * 100, 100);
+
+  // Stats derived from real data when available
+  const stats = [
+    { label: 'Spent This Month', value: `$${Math.round(spent).toLocaleString()}`, icon: TrendingUp, color: '#4ecdc4', xp: transactions.length > 0 ? 'Live data' : '+120 XP' },
+    { label: 'Active Streak', value: '15 days', icon: Flame, color: '#ff6b9d', xp: 'Keep it up!' },
+    { label: 'Budget Used', value: `${Math.round(spentPercent)}%`, icon: Target, color: '#ffd93d', xp: remaining >= 0 ? `$${Math.round(remaining)} left` : 'Over budget!' },
+    { label: 'Daily Quest', value: 'Done!', icon: Star, color: '#a78bfa', xp: '+50 XP' },
+  ];
+
+  // Show real transactions if available, otherwise fallback placeholder activity
+  const hasRealTransactions = transactions.length > 0;
 
   return (
     <>
@@ -92,7 +136,7 @@ export function GameDashboard({ coins, setCoins, xp, setXp }: GameDashboardProps
           </div>
         </div>
 
-        {/* Monthly Budget */}
+        {/* Monthly Budget — now with real data + spend bar */}
         <div className="lg:col-span-1 bg-[#2d1b4e] p-6 pixel-borders border-4 border-[#6b4e91]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white pixel-font text-sm">MONTHLY BUDGET</h3>
@@ -108,18 +152,27 @@ export function GameDashboard({ coins, setCoins, xp, setXp }: GameDashboardProps
             <div className="text-white pixel-font text-sm">${budget.toLocaleString()}</div>
           </div>
           <div className="bg-[#3d2661] p-3 pixel-borders mb-3">
-            <div className="text-[#c7b8ea] text-xs mb-1">Spent So Far</div>
-            <div className="text-white pixel-font text-sm">${spent.toLocaleString()}</div>
+            <div className="text-[#c7b8ea] text-xs mb-1">Spent So Far {hasRealTransactions && <span className="text-[#4ecdc4]">(live)</span>}</div>
+            <div className="text-white pixel-font text-sm">${Math.round(spent).toLocaleString()}</div>
+          </div>
+          {/* Spend bar */}
+          <div className="h-3 bg-[#1a0f2e] pixel-borders mb-3 overflow-hidden">
+            <div
+              className="h-full transition-all duration-700"
+              style={{
+                width: `${spentPercent}%`,
+                background: spentPercent > 90 ? '#ff6b9d' : spentPercent > 70 ? '#ffd93d' : '#4ecdc4'
+              }}
+            />
           </div>
           <div className="bg-[#3d2661] p-3 pixel-borders">
             <div className="text-[#c7b8ea] text-xs mb-1">Remaining</div>
-            <div className="text-[#4ecdc4] pixel-font text-sm">${(budget - spent).toLocaleString()}</div>
+            <div className={`pixel-font text-sm ${remaining < 0 ? 'text-[#ff6b9d]' : 'text-[#4ecdc4]'}`}>
+              {remaining < 0 ? `-$${Math.abs(Math.round(remaining)).toLocaleString()}` : `$${Math.round(remaining).toLocaleString()}`}
+            </div>
           </div>
         </div>
       </div>
-
-        
-
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -166,21 +219,63 @@ export function GameDashboard({ coins, setCoins, xp, setXp }: GameDashboardProps
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Transaction History (real) or Recent Activity (placeholder) */}
       <div className="bg-[#2d1b4e] p-6 pixel-borders border-4 border-[#6b4e91]">
-        <h3 className="text-white pixel-font text-sm mb-6">RECENT ACTIVITY</h3>
-        <div className="space-y-4">
-          {recentActivity.map((activity) => (
-            <div key={activity.id} className="bg-[#3d2661] p-4 pixel-borders flex items-start justify-between">
-              <div className="flex-1">
-                <div className="text-white text-sm mb-1">{activity.action}</div>
-                <div className="text-[#4ecdc4] pixel-font text-xs mb-2">{activity.reward}</div>
-                <div className="text-[#c7b8ea] text-xs">{activity.time}</div>
-              </div>
-              <Zap className="w-5 h-5 text-[#ffd93d] pixel-bounce" />
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-white pixel-font text-sm">
+            {hasRealTransactions ? 'TRANSACTION HISTORY' : 'RECENT ACTIVITY'}
+          </h3>
+          {hasRealTransactions && (
+            <span className="text-[#4ecdc4] pixel-font text-xs">{transactions.length} transactions</span>
+          )}
         </div>
+
+        {hasRealTransactions ? (
+          <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+            {transactions.slice(0, 30).map((tx, i) => {
+              const { icon: CatIcon, color } = getCategoryIcon(tx);
+              const isNegative = (tx.amount ?? 0) < 0; // refund/credit
+              return (
+                <div key={tx.transaction_id || i} className="bg-[#3d2661] p-4 pixel-borders flex items-center justify-between gap-3">
+                  <div
+                    className="w-9 h-9 pixel-borders flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: color + '30' }}
+                  >
+                    <CatIcon className="w-4 h-4" style={{ color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white text-sm truncate">{tx.merchant_name || tx.name || 'Unknown'}</div>
+                    <div className="text-[#c7b8ea] text-xs">{tx.category?.[0] || tx.personal_finance_category?.primary || 'Other'}</div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className={`pixel-font text-sm ${isNegative ? 'text-[#4ecdc4]' : 'text-[#ff6b9d]'}`}>
+                      {isNegative ? '+' : '-'}${Math.abs(tx.amount ?? 0).toFixed(2)}
+                    </div>
+                    <div className="text-[#c7b8ea] text-xs">{formatDate(tx.date)}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {[
+              { id: 1, action: 'Completed "Save $50"', reward: '+50 XP, +25 coins', time: '2 hours ago' },
+              { id: 2, action: 'Unlocked "Penny Pincher"', reward: '+100 XP', time: '1 day ago' },
+              { id: 3, action: 'Daily login streak!', reward: '+30 XP, +10 coins', time: '1 day ago' },
+              { id: 4, action: 'Saved on groceries', reward: '+25 XP, +15 coins', time: '2 days ago' },
+            ].map((activity) => (
+              <div key={activity.id} className="bg-[#3d2661] p-4 pixel-borders flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="text-white text-sm mb-1">{activity.action}</div>
+                  <div className="text-[#4ecdc4] pixel-font text-xs mb-2">{activity.reward}</div>
+                  <div className="text-[#c7b8ea] text-xs">{activity.time}</div>
+                </div>
+                <Zap className="w-5 h-5 text-[#ffd93d] pixel-bounce" />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {showBudgetModal && (
