@@ -6,6 +6,7 @@ import { Shop } from './components/Shop';
 import { LeaderBoard } from './components/LeaderBoard';
 import { HomePage } from './components/HomePage';
 import { LoginPage } from './components/LoginPage';
+import { ProfilePage } from './components/ProfilePage';
 import PlaidButton from './PlaidButton';
 
 import {
@@ -15,10 +16,11 @@ import {
   ShoppingBag,
   Menu,
   Coins,
-  ContactRound
+  ContactRound,
+  User
 } from 'lucide-react';
 
-type View = 'HomePage' | 'LoginPage' | 'dashboard' | 'quests' | 'achievements' | 'shop' | 'friends';
+type View = 'HomePage' | 'LoginPage' | 'dashboard' | 'quests' | 'achievements' | 'shop' | 'friends' | 'profile';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('HomePage');
@@ -34,6 +36,7 @@ export default function App() {
     { id: 'achievements' as View, label: 'Trophies', icon: Trophy },
     { id: 'shop' as View, label: 'Shop', icon: ShoppingBag },
     { id: 'friends' as View, label: 'Friends', icon: ContactRound },
+    { id: 'profile' as View, label: 'Profile', icon: User },
   ];
 
   if (currentView === 'HomePage') {
@@ -198,6 +201,7 @@ export default function App() {
           {currentView === 'achievements' && <Achievements />}
           {currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} />}
           {currentView === 'friends' && <LeaderBoard coins={coins} setCoins={setCoins} />}
+          {currentView === 'profile' && <ProfilePage username={username} />}
         </main>
       </div>
 
