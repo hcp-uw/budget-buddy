@@ -4,6 +4,7 @@ import { QuestBoard } from './components/QuestBoard';
 import { Achievements } from './components/Achievements';
 import { Shop } from './components/Shop';
 import { LeaderBoard } from './components/LeaderBoard';
+import { HomePage } from './components/HomePage';
 import { LoginPage } from './components/LoginPage';
 import { ProfilePage } from './components/ProfilePage';
 import PlaidButton from './PlaidButton';
@@ -20,7 +21,7 @@ import {
   User
 } from 'lucide-react';
 
-type View ='login' | 'dashboard' | 'quests' | 'achievements' | 'shop' | 'friends' | 'profile';
+type View = 'start' | 'login' | 'dashboard' | 'quests' | 'achievements' | 'shop' | 'friends'|'profile';
 
 interface UserData {
   userId: string;
@@ -29,7 +30,7 @@ interface UserData {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<View>('login');
+  const [currentView, setCurrentView] = useState<View>('start');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [coins, setCoins] = useState(1250);
   const [xp, setXp] = useState(3450);
@@ -55,20 +56,32 @@ export default function App() {
     if (userTransactions.length > 0) {
       const spent = calculateMonthlySpent(userTransactions);
       setTotalSpent(spent);
+      console.log('💰 Total spent calculated:', spent, 'from', userTransactions.length, 'transactions');
     }
   }, [userTransactions]);
+
+  // Show start/intro page with "START BUDGET" button
+  if (currentView === 'start') {
+    return (
+      <HomePage 
+        onPlayClick={() => setCurrentView('login')}
+      />
+    );
+  }
 
   // Show login page
   if (currentView === 'login') {
     return (
       <LoginPage 
         onBack={() => {
+          setCurrentView('start');
           setUsername('Player');
           setUserId(null);
           setUserEmail(null);
           setUserTransactions([]);
         }}
         onLoginSuccess={(budget: number, transactions: any[], userName: string) => {
+          console.log('✅ Login successful:', userName, 'with', transactions.length, 'transactions');
           setMonthlyBudget(budget);
           setUserTransactions(transactions);
           setUsername(userName);
@@ -183,7 +196,14 @@ export default function App() {
 
             {/* Logout */}
             <button
-              onClick={() => setCurrentView('login')}
+              onClick={() => {
+                setCurrentView('start');
+                setUsername('Player');
+                setUserId(null);
+                setUserEmail(null);
+                setUserTransactions([]);
+                setTotalSpent(0);
+              }}
               className="w-full flex items-center justify-center gap-3 py-4 transition-all pixel-borders bg-[#3d2661] text-white hover:bg-[#ff6b9d] mt-4"
               style={{ cursor: 'pointer', marginTop: 'auto' }}
             >
