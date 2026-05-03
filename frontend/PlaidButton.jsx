@@ -62,11 +62,23 @@ const PlaidButton = ({ onBankConnected, onTransactionsLoaded, onLoginComplete, c
         headers: { 'Content-Type': 'application/json' },
       });
       const txData = await txResponse.json();
-      const transactions = txData.latest_transactions || txData.transactions || [];
+      
+      // Handle different possible response formats
+      let transactions = txData.latest_transactions || txData.transactions || txData.added || [];
+      
+      // If transactions is an array, use it directly; otherwise, try to extract from wrapper
+      if (!Array.isArray(transactions)) {
+        transactions = [];
+      }
+      
+      console.log('📊 Transactions loaded from backend:', transactions.length, 'items');
+      console.log('📊 Sample transaction:', transactions[0]);
+      
       if (onTransactionsLoaded) onTransactionsLoaded(transactions);
 
       // Call onLoginComplete with all user data
       if (onLoginComplete && userData) {
+        console.log('✅ Calling onLoginComplete with', transactions.length, 'transactions');
         onLoginComplete({
           userId: userData.id,
           email: userData.email,

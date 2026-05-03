@@ -66,9 +66,18 @@ export function GameDashboard({ coins, setCoins, xp, setXp, initialBudget = 2000
   const [budget, setBudget] = useState(initialBudget);
 
   // Compute spent from real transactions (positive amounts = spending in Plaid)
-  const spent = transactions.length > 0
-    ? transactions.reduce((sum, tx) => sum + (tx.amount && tx.amount > 0 ? tx.amount : 0), 0)
-    : 1550;
+  // Use provided transactions OR fall back to placeholder
+  let spent = 1550; // Default placeholder
+  
+  if (transactions && transactions.length > 0) {
+    spent = transactions.reduce((sum, tx) => {
+      const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount || 0);
+      return sum + (amount > 0 ? amount : 0);
+    }, 0);
+    console.log('💰 Dashboard: Calculated spending from', transactions.length, 'transactions:', spent);
+  } else {
+    console.log('⚠️ Dashboard: No real transactions, using placeholder');
+  }
 
   const remaining = budget - spent;
   const spentPercent = Math.min((spent / budget) * 100, 100);
