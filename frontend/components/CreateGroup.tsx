@@ -19,7 +19,6 @@ export const CreateGroup = ({ userId, onSuccess }: Props) => {
     const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     try {
-      // Step 1: Create the group
       const { data: newGroup, error: groupError } = await supabase
         .from('groups')
         .insert([{ 
@@ -31,15 +30,13 @@ export const CreateGroup = ({ userId, onSuccess }: Props) => {
         .select()
         .single();
 
-      // If Step 1 fails, show exactly why
       if (groupError) {
-        alert(`Step 1 (Groups) Error: ${groupError.message}\nCode: ${groupError.code}`);
+        alert(`Error: ${groupError.message}`);
         setLoading(false);
         return;
       }
 
       if (newGroup) {
-        // Step 2: Add member to leaderboard
         const { error: joinError } = await supabase
           .from('leaderboard_groups')
           .insert([{ 
@@ -48,9 +45,8 @@ export const CreateGroup = ({ userId, onSuccess }: Props) => {
             joined_at: new Date() 
           }]);
 
-        // If Step 2 fails, show exactly why
         if (joinError) {
-          alert(`Step 2 (Leaderboard) Error: ${joinError.message}\nCode: ${joinError.code}`);
+          alert(`Error: ${joinError.message}`);
           setLoading(false);
           return;
         }
@@ -62,24 +58,23 @@ export const CreateGroup = ({ userId, onSuccess }: Props) => {
       }
     } catch (error: any) { 
       console.error("Critical Error:", error);
-      alert(`System Error: ${error.message}`);
     } finally { 
       setLoading(false); 
     }
   };
 
   return (
-    <div className="bg-[#2d1b4e] p-6 pixel-borders">
+    <div className="bg-[#2d1b4e] p-6 pixel-borders w-full shadow-lg mt-6">
       <h2 className="text-[#ffd93d] pixel-font text-lg mb-4">⭕ Create Circle</h2>
-      <form onSubmit={handleCreateGroup}>
+      <form id="create-form" onSubmit={handleCreateGroup}>
         <input 
-          className="w-full bg-[#1a0f2e] text-white p-3 pixel-borders mb-3 outline-none" 
+          className="w-full bg-[#1a0f2e] text-white p-3 pixel-borders mb-3 outline-none text-sm" 
           placeholder="NAME" 
           value={groupName} 
           onChange={(e) => setGroupName(e.target.value)} 
         />
         <input 
-          className="w-full bg-[#1a0f2e] text-white p-3 pixel-borders mb-4 outline-none" 
+          className="w-full bg-[#1a0f2e] text-white p-3 pixel-borders mb-4 outline-none text-sm" 
           placeholder="GOAL" 
           value={goalAmount} 
           onChange={(e) => setGoalAmount(e.target.value)} 
@@ -87,7 +82,7 @@ export const CreateGroup = ({ userId, onSuccess }: Props) => {
         <button 
           type="submit" 
           disabled={loading}
-          className="w-full bg-[#6366f1] text-white p-3 pixel-borders pixel-font text-sm"
+          className="w-full bg-[#6366f1] text-white p-3 pixel-borders pixel-font text-sm hover:brightness-110 active:scale-95 transition-all"
         >
           {loading ? "LAUNCHING..." : "LAUNCH CIRCLE"}
         </button>

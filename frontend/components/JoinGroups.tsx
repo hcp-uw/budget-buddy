@@ -15,7 +15,6 @@ export const JoinGroup = ({ userId, onSuccess }: Props) => {
     setLoading(true);
     
     try {
-      // 1. Find the circle by code
       const { data: circle, error: fetchError } = await supabase
         .from('groups')
         .select('id, name')
@@ -25,7 +24,6 @@ export const JoinGroup = ({ userId, onSuccess }: Props) => {
       if (fetchError || !circle) {
         alert("Circle not found! Double check that code.");
       } else {
-        // 2. Insert the user into the group membership
         const { error: joinError } = await supabase
           .from('leaderboard_groups') 
           .insert([{ 
@@ -50,10 +48,10 @@ export const JoinGroup = ({ userId, onSuccess }: Props) => {
   };
 
   return (
-    <div className="bg-[#2d1b4e] p-6 pixel-borders mb-6">
+    <div className="bg-[#2d1b4e] p-6 pixel-borders w-full shadow-lg">
       <h2 className="text-[#ffd93d] pixel-font text-lg mb-4">🤝 Join a Circle</h2>
       <input 
-        className="w-full bg-[#1a0f2e] text-white p-3 pixel-borders mb-4 outline-none"
+        className="w-full bg-[#1a0f2e] text-white p-3 pixel-borders mb-4 outline-none text-sm uppercase"
         placeholder="6-DIGIT CODE" 
         value={code}
         onChange={(e) => setCode(e.target.value)}
