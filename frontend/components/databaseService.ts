@@ -1,170 +1,86 @@
 import { supabase } from './supabaseClient';
 
-/**
- * Create or get a user by email
- */
-export async function createOrGetUser(email: string) {
-  try {
-    // First try to get existing user
-    const { data: existingUser, error: selectError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (existingUser) {
-      return { success: true, user: existingUser };
-    }
-
-    // If no user exists, create one
-    const { data: newUser, error: createError } = await supabase
-      .from('users')
-      .insert([{ email }])
-      .select()
-      .single();
-
-    if (createError) {
-      throw createError;
-    }
-
-    return { success: true, user: newUser };
-  } catch (error: any) {
-    console.error('Error creating/getting user:', error);
-    return { success: false, message: error.message || 'Failed to create user' };
-  }
+export interface GameState {
+  xp: number;
+  coins: number;
+  streakCount: number;
 }
 
-/**
- * Save Plaid item for user
- */
-export async function savePlaidItem(
-  userId: string,
-  accessToken: string,
-  itemId: string,
-  institutionName: string
-) {
+// Load XP, coins, and streak for a user. Creates records if they don't exist.
+export async function loadGameState(userId: string): Promise<GameState> {
   try {
-    const { data, error } = await supabase
-      .from('plaid_items')
-      .insert([
-        {
-          user_id: userId,
-          plaid_access_token: accessToken,
-          plaid_item_id: itemId,
-          institution_name: institutionName,
-          status: 'connected'
-        }
-      ])
-      .select()
-      .single();
+    const [pointsRes, streakRes] = await Promise.all([
+      supabase.from('points').select('*').eq('user_id', userId).single(),
+      supabase.from('learning_streaks').select('*').eq('user_id', userId).single()
+    ]);
 
-    if (error) {
-      throw error;
+    const xp = pointsRes.data?.total_points ?? 0;
+    const coins = pointsRes.data?.current_period_points ?? 0;
+
+    if (!pointsRes.data) {
+      await supabase.from('points').insert([{
+        user_id: userId, total_points: 0, current_period_points: 0,
+        last_updated: new Date().toISOString()
+      }]);
     }
 
-    return { success: true, plaidItem: data };
-  } catch (error: any) {
-    console.error('Error saving plaid item:', error);
-    return { success: false, message: error.message || 'Failed to save plaid item' };
-  }
-}
+    let streakCount = 1;
+    if (streakRes.data?.last_completed) {
+      const last = new Date(streakRes.data.last_completed);
+      const now = new Date();
+      const daysDiff = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
 
-/**
- * Get transactions for a user
- */
-export async function getUserTransactions(userId: string) {
-  try {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('date', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    return { success: true, transactions: data || [] };
-  } catch (error: any) {
-    console.error('Error fetching transactions:', error);
-    return { success: false, message: error.message || 'Failed to fetch transactions' };
-  }
-}
-
-/**
- * Get user's budget info
- */
-export async function getUserBudgets(userId: string) {
-  try {
-    const { data, error } = await supabase
-      .from('budgets')
-      .select('*')
-      .eq('user_id', userId)
-      .order('start_date', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    return { success: true, budgets: data || [] };
-  } catch (error: any) {
-    console.error('Error fetching budgets:', error);
-    return { success: false, message: error.message || 'Failed to fetch budgets' };
-  }
-}
-
-/**
- * Get user's points
- */
-export async function getUserPoints(userId: string) {
-  try {
-    const { data, error } = await supabase
-      .from('points')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      throw error;
-    }
-
-    // If no points record, create one
-    if (!data) {
-      const { data: newPoints, error: createError } = await supabase
-        .from('points')
-        .insert([
-          {
-            user_id: userId,
-            total_points: 0,
-            current_period_points: 0,
-            last_updated: new Date().toISOString()
-          }
-        ])
-        .select()
-        .single();
-
-      if (createError) {
-        throw createError;
+      if (daysDiff === 0) {
+        streakCount = streakRes.data.streak_count;
+      } else if (daysDiff === 1) {
+        streakCount = streakRes.data.streak_count + 1;
+        await supabase.from('learning_streaks')
+          .update({ streak_count: streakCount, last_completed: now.toISOString() })
+          .eq('user_id', userId);
+      } else {
+        streakCount = 1;
+        await supabase.from('learning_streaks')
+          .update({ streak_count: 1, last_completed: now.toISOString() })
+          .eq('user_id', userId);
       }
-
-      return { success: true, points: newPoints };
+    } else {
+      await supabase.from('learning_streaks').upsert([{
+        user_id: userId, streak_count: 1, last_completed: new Date().toISOString()
+      }], { onConflict: 'user_id' });
     }
 
-    return { success: true, points: data };
-  } catch (error: any) {
-    console.error('Error fetching points:', error);
-    return { success: false, message: error.message || 'Failed to fetch points' };
+    return { xp, coins, streakCount };
+  } catch (err) {
+    console.error('Error loading game state:', err);
+    return { xp: 0, coins: 0, streakCount: 1 };
   }
 }
 
-/**
- * Calculate total spent from transactions (current month)
- */
+// Persist XP and coins for a user. Uses total_points for XP, current_period_points for coins.
+export async function saveGameState(userId: string, xp: number, coins: number): Promise<void> {
+  try {
+    const { data } = await supabase.from('points').select('id').eq('user_id', userId).single();
+    if (data) {
+      await supabase.from('points').update({
+        total_points: xp,
+        current_period_points: coins,
+        last_updated: new Date().toISOString()
+      }).eq('user_id', userId);
+    } else {
+      await supabase.from('points').insert([{
+        user_id: userId, total_points: xp, current_period_points: coins,
+        last_updated: new Date().toISOString()
+      }]);
+    }
+  } catch (err) {
+    console.error('Error saving game state:', err);
+  }
+}
+
 export function calculateMonthlySpent(transactions: any[]): number {
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-
   return transactions
     .filter((tx) => {
       const txDate = new Date(tx.date);
@@ -173,9 +89,6 @@ export function calculateMonthlySpent(transactions: any[]): number {
     .reduce((total, tx) => total + Math.abs(tx.amount), 0);
 }
 
-/**
- * Calculate total spent all time
- */
 export function calculateTotalSpent(transactions: any[]): number {
   return transactions.reduce((total, tx) => total + Math.abs(tx.amount), 0);
 }

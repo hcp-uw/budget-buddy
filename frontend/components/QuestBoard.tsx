@@ -36,11 +36,12 @@ interface QuestBoardProps {
   setCoins: (coins: number) => void;
   xp: number;
   setXp: (xp: number) => void;
+  userId?: string | null;
   transactions?: Transaction[];
   budget?: number;
 }
 
-export function QuestBoard({ coins, setCoins, xp, setXp, transactions = [], budget = 2000 }: QuestBoardProps) {
+export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = [], budget = 2000 }: QuestBoardProps) {
   const hasReal = transactions.length > 0;
 
   // Derive real progress values from Plaid transactions
@@ -138,11 +139,14 @@ export function QuestBoard({ coins, setCoins, xp, setXp, transactions = [], budg
     const quest = quests.find(q => q.id === questId);
     if (!quest || quest.completed || quest.progress < quest.total) return;
 
-    setXp(xp + quest.xpReward);
-    setCoins(coins + quest.coinReward);
-    setQuests(quests.map(q => 
+    const newXp = xp + quest.xpReward;
+    const newCoins = coins + quest.coinReward;
+    setXp(newXp);
+    setCoins(newCoins);
+    setQuests(quests.map(q =>
       q.id === questId ? { ...q, completed: true } : q
     ));
+    // App.tsx debounce will persist to DB automatically via the useEffect
   };
 
   const difficultyColors = {
