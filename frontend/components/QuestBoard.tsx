@@ -57,17 +57,76 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
     .reduce((s, t) => s + (t.amount ?? 0), 0);
   const savedToday = Math.max(0, 20 - spentToday); // quest goal: save $20 today (spend <$20)
 
+  const getTimeLeft = (targetDate: Date) => {
+    const diff = targetDate.getTime() - Date.now();
+
+    if (diff <= 0) return 'Expired';
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+
+    // Example:
+    // 2d 5h 12m left
+    // 5h 42m left
+    // 12m left
+
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m left`;
+    }
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m left`;
+    }
+
+    return `${minutes}m left`;
+  };
+
+  const getNextMidnight = () => {
+    const now = new Date();
+
+    return new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1, // tomorrow
+      0,
+      0,
+      0
+    );
+  };
+
+  const getNextMonth = () => {
+    const now = new Date();
+
+    return new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1,
+      0,
+      0,
+      0
+    );
+  };
+
+  const dailyQuestEnd = getNextMidnight();
+  const monthlyQuestEnd = getNextMonth();
+
   const [quests, setQuests] = useState<Quest[]>([
+    
+    
     {
       id: 1,
       title: 'Daily Saver',
       description: 'Keep spending under $20 today',
       xpReward: 50,
       coinReward: 25,
-      progress: hasReal ? Math.min(Math.round(savedToday), 20) : 15,
+      // Progress = dollars saved below the $20 limit
+      // If user spent $8 → progress = 12/20
+      // If user spent $25 → progress = 0/20
+      progress: hasReal ? Math.max(0, Math.min(20, Math.round(20 - spentToday))): 0,
       total: 20,
       difficulty: 'easy',
-      timeLeft: '6h left',
+      timeLeft: getTimeLeft(dailyQuestEnd),
       completed: false
     },
     {
@@ -76,61 +135,25 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
       description: 'Stay under your monthly budget',
       xpReward: 200,
       coinReward: 100,
-      progress: hasReal ? (remaining >= 0 ? 7 : Math.max(0, Math.round(7 * (remaining + budget) / budget))) : 5,
-      total: 7,
+      // Progress reflects percentage of budget remaining
+      // Full progress if still under budget
+      progress: hasReal ? Math.max(0, Math.min(7, Math.round((remaining / budget) * 7))) : 0,
+      total: 100,
       difficulty: 'hard',
-      timeLeft: '2d left',
+      timeLeft: getTimeLeft(monthlyQuestEnd),
       completed: false
     },
     {
       id: 3,
-      title: 'Expense Tracker',
-      description: 'Log 10 transactions via your bank',
-      xpReward: 75,
-      coinReward: 40,
-      progress: hasReal ? Math.min(txCount, 10) : 7,
-      total: 10,
-      difficulty: 'easy',
-      completed: false
-    },
-    {
-      id: 4,
-      title: 'Goal Getter',
-      description: `Save $500 this month`,
-      xpReward: 300,
-      coinReward: 150,
-      progress: hasReal ? Math.min(Math.round(savedAmount), 500) : 450,
-      total: 500,
-      difficulty: 'hard',
-      timeLeft: '5d left',
-      completed: false
-    },
-    {
-      id: 5,
-      title: 'Smart Shopper',
-      description: 'Make fewer than 3 shopping transactions',
-      xpReward: 100,
-      coinReward: 50,
-      progress: hasReal
-        ? Math.min(transactions.filter(t => {
-            const c = (t.personal_finance_category?.primary || t.category?.[0] || '').toLowerCase();
-            return c.includes('shop') || c.includes('merchan');
-          }).length, 3)
-        : 2,
-      total: 3,
-      difficulty: 'medium',
-      timeLeft: '3d left',
-      completed: false
-    },
-    {
-      id: 6,
-      title: 'Streak Hero',
-      description: 'Maintain a 30-day login streak',
+      title: 'Super Saver',
+      description: 'Save $500 this month',
       xpReward: 500,
       coinReward: 250,
-      progress: 15,
-      total: 30,
+      // Progress directly tied to savings goal
+      progress: hasReal ? Math.max(0, Math.min(500, Math.round(savedAmount))): 0,
+      total: 500,
       difficulty: 'hard',
+      timeLeft: getTimeLeft(monthlyQuestEnd),
       completed: false
     }
   ]);
@@ -173,6 +196,7 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
       </div>
 
       {/* Daily Quest Highlight */}
+      
       <div className="bg-gradient-to-r from-[#ffd93d] to-[#ff6b9d] p-6 pixel-borders border-4 border-[#ff5a8d]">
         <div className="flex items-center gap-3 mb-3">
           <Flame className="w-6 h-6 text-white pixel-glow" />
