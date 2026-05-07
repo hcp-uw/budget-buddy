@@ -145,8 +145,8 @@ const GroupStandings = ({
   );
 };
 
-export const LeaderBoard = ({ coins, setCoins }: { coins: number; setCoins: any }) => {
-  const USER_ID = "eb18528f-81cd-4f3a-9af8-fe5603938070"; 
+export const LeaderBoard = ({ coins, setCoins, userId }: { coins: number; setCoins: any; userId: string }) => {
+  const USER_ID = userId;
   const [myGroups, setMyGroups] = useState<any[]>([]);
   
   // Updated state to track the inviteCode

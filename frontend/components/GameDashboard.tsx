@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Zap, 
   TrendingUp, 
@@ -30,8 +30,10 @@ interface GameDashboardProps {
   setCoins: (coins: number) => void;
   xp: number;
   setXp: (xp: number) => void;
+  streak?: number;
   initialBudget?: number;
   transactions?: Transaction[];
+  onBudgetChange?: (newBudget: number) => void;
 }
 
 // Map Plaid categories to icons + colors
@@ -56,41 +58,40 @@ function formatDate(dateStr?: string) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export function GameDashboard({ coins, setCoins, xp, setXp, initialBudget = 2000, transactions = [] }: GameDashboardProps) {
-  const [level] = useState(12);
-  const currentLevelXP = 3000;
-  const nextLevelXP = 4000;
-  const xpProgress = ((xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
+export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialBudget = 2000, transactions = [], onBudgetChange }: GameDashboardProps) {
+  // Level derived from XP: each level requires 500 XP
+  const level = Math.floor(xp / 500) + 1;
+  const xpForCurrentLevel = (level - 1) * 500;
+  const nextLevelXP = level * 500;
+  const xpProgress = Math.min(((xp - xpForCurrentLevel) / 500) * 100, 100);
+
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
   const [budget, setBudget] = useState(initialBudget);
 
-  // Compute spent from real transactions (positive amounts = spending in Plaid)
-  // Use provided transactions OR fall back to placeholder
-  let spent = 1550; // Default placeholder
-  
-  if (transactions && transactions.length > 0) {
-    spent = transactions.reduce((sum, tx) => {
-      const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount || 0);
-      return sum + (amount > 0 ? amount : 0);
-    }, 0);
-    console.log('💰 Dashboard: Calculated spending from', transactions.length, 'transactions:', spent);
-  } else {
-    console.log('⚠️ Dashboard: No real transactions, using placeholder');
-  }
+  // Keep budget in sync if parent changes it (e.g. on session restore)
+  useEffect(() => {
+    setBudget(initialBudget);
+  }, [initialBudget]);
+
+  // Spending is $0 when there are no transactions (Plaid not connected)
+  const spent = transactions.length > 0
+    ? transactions.reduce((sum, tx) => {
+        const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount || 0);
+        return sum + (amount > 0 ? amount : 0);
+      }, 0)
+    : 0;
 
   const remaining = budget - spent;
   const spentPercent = Math.min((spent / budget) * 100, 100);
 
-  // Stats derived from real data when available
   const stats = [
-    { label: 'Spent This Month', value: `$${Math.round(spent).toLocaleString()}`, icon: TrendingUp, color: '#4ecdc4', xp: transactions.length > 0 ? 'Live data' : '+120 XP' },
-    { label: 'Active Streak', value: '15 days', icon: Flame, color: '#ff6b9d', xp: 'Keep it up!' },
+    { label: 'Spent This Month', value: `$${Math.round(spent).toLocaleString()}`, icon: TrendingUp, color: '#4ecdc4', xp: transactions.length > 0 ? 'Live data' : 'Link bank to track' },
+    { label: 'Active Streak', value: `${streak} day${streak !== 1 ? 's' : ''}`, icon: Flame, color: '#ff6b9d', xp: 'Keep it up!' },
     { label: 'Budget Used', value: `${Math.round(spentPercent)}%`, icon: Target, color: '#ffd93d', xp: remaining >= 0 ? `$${Math.round(remaining)} left` : 'Over budget!' },
-    { label: 'Daily Quest', value: 'Done!', icon: Star, color: '#a78bfa', xp: '+50 XP' },
+    { label: 'Total XP', value: `${xp}`, icon: Star, color: '#a78bfa', xp: `Level ${level}` },
   ];
 
-  // Show real transactions if available, otherwise fallback placeholder activity
   const hasRealTransactions = transactions.length > 0;
 
   return (
@@ -301,7 +302,11 @@ export function GameDashboard({ coins, setCoins, xp, setXp, initialBudget = 2000
           <div className="flex gap-3">
             <button
               onClick={() => {
-                setBudget(Number(budgetInput));
+                const newBudget = Number(budgetInput);
+                if (newBudget > 0) {
+                  setBudget(newBudget);
+                  onBudgetChange?.(newBudget);
+                }
                 setShowBudgetModal(false);
               }}
               className="flex-1 bg-[#ff6b9d] text-white pixel-font text-xs py-2 pixel-borders hover:bg-[#ff5a8d]"
