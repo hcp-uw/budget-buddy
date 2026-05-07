@@ -30,9 +30,15 @@ interface ShopProps {
   setCoins: (coins: number) => void;
   setCowFilter: (filter: string) => void;
   cowFilter: string;
+  setCrownEquipped: (equipped: boolean) => void;
+  crownEquipped: boolean;
+  setSunglassesEquipped: (equipped: boolean) => void;
+  sunglassesEquipped: boolean;
 }
 
-export function Shop({ coins, setCoins, setCowFilter, cowFilter }: ShopProps) {
+export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquipped, crownEquipped,
+                      setSunglassesEquipped, sunglassesEquipped
+}: ShopProps) {
   const [items, setItems] = useState<ShopItem[]>([
     {
       id: 1,
@@ -63,7 +69,8 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter }: ShopProps) {
       icon: Crown,
       category: 'cosmetic',
       color: '#ffd93d',
-      owned: false
+      owned: false,
+      filter: 'crown'
     },
     {
       id: 4,
@@ -133,7 +140,8 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter }: ShopProps) {
       icon: Glasses,
       category: 'cosmetic',
       color: '#4ecdc4',
-      owned: false
+      owned: false,
+      filter: 'sunglasses'
 },
 
   ]);
@@ -313,10 +321,19 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter }: ShopProps) {
                     className="p-3 pixel-borders flex items-center gap-3"
                     style={{ 
                       cursor: 'pointer',
-                      backgroundColor: cowFilter === item.filter ? '#7a6b00' : '#3d2661'
+                      backgroundColor: (item.name === 'Golden Crown' ? crownEquipped : item.name === 'Sunglasses' ? sunglassesEquipped : 
+                                        cowFilter === item.filter) ? '#7a6b00' : '#3d2661'
                     }}
-                    onClick={() => setCowFilter(prev => prev === (item.filter || '') ? '' : (item.filter || ''))}
-                  >
+                    onClick={() => {
+                      if (item.name === 'Golden Crown') {
+                        setCrownEquipped(prev => !prev);
+                      } else if (item.name == 'Sunglasses'){
+                        setSunglassesEquipped(prev => !prev);
+                      } else if (item.filter) {
+                        setCowFilter(prev => prev === item.filter ? '' : item.filter);
+                      }
+                    }}
+                  > 
                     <div className="w-8 h-8 pixel-borders flex items-center justify-center" style={{ backgroundColor: item.color + '40' }}>
                       <ItemIcon className="w-4 h-4" style={{ color: item.color }} />
                     </div>

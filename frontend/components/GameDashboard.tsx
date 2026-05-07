@@ -119,9 +119,9 @@ export function GameDashboard({ coins, setCoins, xp, setXp, initialBudget = 2000
 
         {/* XP Progress */}
         <div className="lg:col-span-1 bg-[#2d1b4e] p-6 pixel-borders border-4 border-[#6b4e91]">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white pixel-font text-sm">EXPERIENCE</h3>
-            <span className="text-[#4ecdc4] pixel-font text-xs">{xp} / {nextLevelXP} XP</span>
+          <div className="mb-4">
+            <h3 className="text-white pixel-font text-sm mb-2">EXPERIENCE</h3>
+            <div className="text-[#4ecdc4] pixel-font text-xs">{xp} / {nextLevelXP} XP</div>
           </div>
           <div className="h-8 bg-[#1a0f2e] pixel-borders mb-4 overflow-hidden">
             <div 

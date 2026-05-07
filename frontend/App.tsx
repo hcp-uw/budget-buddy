@@ -42,6 +42,8 @@ export default function App() {
   const [totalSpent, setTotalSpent] = useState(0);
   const [monthlyBudget, setMonthlyBudget] = useState(2000);
   const [cowFilter, setCowFilter] = useState('');
+  const [crownEquipped, setCrownEquipped] = useState(false);
+  const [sunglassesEquipped, setSunglassesEquipped] = useState(false);
 
   const navItems = [
     { id: 'dashboard' as View, label: 'Home', icon: Gamepad2 },
@@ -217,12 +219,24 @@ export default function App() {
 
         <div style={{ position: 'fixed', left: '92px', top: '50%', transform: 'translateY(-50%)', zIndex: 45, width: '364px', height: '750px', 
           display: 'flex', justifyContent: 'center', border: '4px solid #6b4e91', backgroundColor: '#2d1b4e', padding: '8px', paddingTop: '100px'  }}>
-  <img 
-    src="/Moolah.png" 
-    alt="Moolah"
-    style={{ imageRendering: 'pixelated', width: '500px', height: '510px', filter: cowFilter }} 
-  />
-</div>
+          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            {crownEquipped && (
+              <div style={{ position: 'absolute', top: '25px', left: '52%', transform: 'translateX(-50%)', zIndex: 46, fontSize: '80px' }}>
+                👑
+              </div>
+            )}
+            {sunglassesEquipped && (
+              <div style={{ position: 'absolute', top: '78px', left: '52%', transform: 'translateX(-50%) scaleX(1.18)', zIndex: 46, fontSize: '160px', filter: 'brightness(0.4)' }}>
+                🕶️
+              </div>
+            )}
+            <img 
+              src="/Moolah.png" 
+              alt="Moolah"
+              style={{ imageRendering: 'pixelated', width: '500px', height: '510px', filter: cowFilter }} 
+            />
+          </div>
+        </div>
 
         {/* Floating Coins (collapsed sidebar) */}
         <div
@@ -241,7 +255,9 @@ export default function App() {
           {currentView === 'dashboard' && <GameDashboard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} initialBudget={monthlyBudget} transactions={userTransactions} />}
           {currentView === 'quests' && <QuestBoard coins={coins} setCoins={setCoins} xp={xp} setXp={setXp} transactions={userTransactions} budget={monthlyBudget} />}
           {currentView === 'achievements' && <Achievements />}
-          {currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} setCowFilter={setCowFilter} cowFilter={cowFilter} />}{currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} setCowFilter={setCowFilter} />}
+          {currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} setCowFilter={setCowFilter}
+           setCrownEquipped={setCrownEquipped} crownEquipped={crownEquipped} cowFilter={cowFilter} 
+           setSunglassesEquipped={setSunglassesEquipped} sunglassesEquipped={sunglassesEquipped}/>}
           {currentView === 'friends' && <LeaderBoard coins={coins} setCoins={setCoins} />}
           {currentView === 'profile' && <ProfilePage username={username} />}
         </main>
