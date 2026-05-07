@@ -1,10 +1,17 @@
 require('dotenv').config({ path: './.env' });
 const util = require('util');
 const moment = require('moment');
+const crypto = require('crypto');
 const express = require("express");
 const cors = require("cors");
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 const { createClient } = require('@supabase/supabase-js');
+
+// Deterministic UUID from username — same user always gets same ID
+function usernameToUUID(username) {
+  const hash = crypto.createHash('sha256').update(username.toLowerCase()).digest('hex');
+  return [hash.slice(0,8), hash.slice(8,12), hash.slice(12,16), hash.slice(16,20), hash.slice(20,32)].join('-');
+}
 
 const app = express();
 app.use(express.json());
@@ -217,6 +224,130 @@ app.get('/api/transactions', function (request, response, next) {
       console.error("❌ Error fetching transactions:", err);
       next(err);
     });
+});
+
+// ✅ SIGNUP
+app.post('/api/signup', async (req, res) => {
+  try {
+    const { username, password, monthlyBudget } = req.body;
+    if (!username?.trim() || !password?.trim()) {
+      return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    const { data: existing } = await supabase
+      .from('users_login')
+      .select('username')
+      .eq('username', username.trim())
+      .single();
+
+    if (existing) return res.status(409).json({ error: 'Username already taken' });
+
+    const userId = usernameToUUID(username.trim());
+    const budget = parseInt(monthlyBudget) || 2000;
+
+    const { error: loginError } = await supabase.from('users_login').insert([{
+      username: username.trim(),
+      password,
+      monthly_budget_goal: budget
+    }]);
+    if (loginError) return res.status(500).json({ error: loginError.message });
+
+    // Ensure user row exists for FK tables (points, streaks, etc.)
+    await supabase.from('users').upsert([{
+      id: userId,
+      email: `${username.trim().toLowerCase()}@local`
+    }], { onConflict: 'id' });
+
+    console.log('✅ Signed up:', username.trim(), userId);
+    res.json({ userId, username: username.trim(), monthlyBudget: budget });
+  } catch (err) {
+    console.error('❌ Signup error:', err);
+    res.status(500).json({ error: 'Signup failed' });
+  }
+});
+
+// ✅ LOGIN
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username?.trim() || !password?.trim()) {
+      return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    const { data, error } = await supabase
+      .from('users_login')
+      .select('*')
+      .eq('username', username.trim())
+      .eq('password', password)
+      .single();
+
+    if (error || !data) return res.status(401).json({ error: 'Invalid username or password' });
+
+    const userId = usernameToUUID(username.trim());
+
+    await supabase.from('users').upsert([{
+      id: userId,
+      email: `${username.trim().toLowerCase()}@local`
+    }], { onConflict: 'id' });
+
+    console.log('✅ Logged in:', username.trim(), userId);
+    res.json({ userId, username: data.username, monthlyBudget: data.monthly_budget_goal || 2000 });
+  } catch (err) {
+    console.error('❌ Login error:', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// ✅ CHANGE PASSWORD
+app.post('/api/change-password', async (req, res) => {
+  try {
+    const { username, oldPassword, newPassword } = req.body;
+    if (!username || !oldPassword || !newPassword) {
+      return res.status(400).json({ error: 'All fields required' });
+    }
+
+    const { data, error } = await supabase
+      .from('users_login')
+      .select('*')
+      .eq('username', username)
+      .eq('password', oldPassword)
+      .single();
+
+    if (error || !data) return res.status(401).json({ error: 'Current password is incorrect' });
+
+    // PK is (username, password), so must delete + reinsert to change password
+    await supabase.from('users_login').delete().eq('username', username).eq('password', oldPassword);
+    const { error: insertError } = await supabase.from('users_login').insert([{
+      username,
+      password: newPassword,
+      monthly_budget_goal: data.monthly_budget_goal
+    }]);
+
+    if (insertError) return res.status(500).json({ error: insertError.message });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Change password error:', err);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// ✅ UPDATE BUDGET
+app.put('/api/update-budget', async (req, res) => {
+  try {
+    const { username, newBudget } = req.body;
+    if (!username || !newBudget) return res.status(400).json({ error: 'Username and budget required' });
+
+    const { error } = await supabase
+      .from('users_login')
+      .update({ monthly_budget_goal: parseInt(newBudget) })
+      .eq('username', username);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Update budget error:', err);
+    res.status(500).json({ error: 'Failed to update budget' });
+  }
 });
 
 // ✅ HEALTH CHECK
