@@ -9,7 +9,8 @@ import {
   Zap,
   Shield,
   Heart,
-  Glasses
+  Glasses,
+  Rocket
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,17 +35,19 @@ interface ShopProps {
   crownEquipped: boolean;
   setSunglassesEquipped: (equipped: boolean) => void;
   sunglassesEquipped: boolean;
+  setUfoEquipped: (equipped: boolean) => void;
+  ufoEquipped: boolean;
 }
 
 export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquipped, crownEquipped,
-                      setSunglassesEquipped, sunglassesEquipped
+                      setSunglassesEquipped, sunglassesEquipped, setUfoEquipped, ufoEquipped
 }: ShopProps) {
   const [items, setItems] = useState<ShopItem[]>([
     {
       id: 1,
       name: 'XP Boost',
       description: '2x XP for 24 hours',
-      price: 150,
+      price: 0, //150
       icon: Zap,
       category: 'boost',
       color: '#ffd93d',
@@ -54,7 +57,7 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquippe
       id: 2,
       name: 'Green Avatar',
       description: 'Change your avatar color to green',
-      price: 100,
+      price: 0, //100
       icon: Palette,
       category: 'cosmetic',
       color: '#ff6b9d',
@@ -65,7 +68,7 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquippe
       id: 3,
       name: 'Golden Crown',
       description: 'Show off your wealth!',
-      price: 500,
+      price: 0, //300
       icon: Crown,
       category: 'cosmetic',
       color: '#ffd93d',
@@ -84,10 +87,10 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquippe
     },
     {
       id: 5,
-      name: 'Star Outfit',
+      name: 'UFO Hat',
       description: 'Sparkly avatar decoration',
-      price: 200,
-      icon: Star,
+      price: 0,//400
+      icon: Rocket,
       category: 'cosmetic',
       color: '#a78bfa',
       owned: false
@@ -106,7 +109,7 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquippe
       id: 7,
       name: 'Hero Cape',
       description: 'Epic cape for your avatar',
-      price: 350,
+      price: 0, //350
       icon: Shirt,
       category: 'cosmetic',
       color: '#ff6b9d',
@@ -126,7 +129,7 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquippe
       id: 9,
       name: 'Sparkle Effect',
       description: 'Add sparkles to your profile',
-      price: 250,
+      price: 0, //250
       icon: Sparkles,
       category: 'cosmetic',
       color: '#ffd93d',
@@ -136,7 +139,7 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquippe
       id: 10,
       name: 'Sunglasses',
       description: 'Cool shades for your avatar',
-      price: 180,
+      price: 0, //180
       icon: Glasses,
       category: 'cosmetic',
       color: '#4ecdc4',
@@ -321,7 +324,8 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquippe
                     className="p-3 pixel-borders flex items-center gap-3"
                     style={{ 
                       cursor: 'pointer',
-                      backgroundColor: (item.name === 'Golden Crown' ? crownEquipped : item.name === 'Sunglasses' ? sunglassesEquipped : 
+                      backgroundColor: (item.name === 'Golden Crown' ? crownEquipped : item.name === 'Sunglasses' ? sunglassesEquipped :
+                                        item.name === 'UFO Hat' ? ufoEquipped : 
                                         cowFilter === item.filter) ? '#7a6b00' : '#3d2661'
                     }}
                     onClick={() => {
@@ -329,6 +333,8 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquippe
                         setCrownEquipped(prev => !prev);
                       } else if (item.name == 'Sunglasses'){
                         setSunglassesEquipped(prev => !prev);
+                      } else if (item.name === 'UFO Hat') {
+                        setUfoEquipped(prev => !prev);
                       } else if (item.filter) {
                         setCowFilter(prev => prev === item.filter ? '' : item.filter);
                       }

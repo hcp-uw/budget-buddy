@@ -38,6 +38,7 @@ export default function App() {
   const [cowFilter, setCowFilter] = useState('');
   const [crownEquipped, setCrownEquipped] = useState(false);
   const [sunglassesEquipped, setSunglassesEquipped] = useState(false);
+  const [ufoEquipped, setUfoEquipped] = useState(false);
 
   // Restore session on mount
   useEffect(() => {
@@ -245,8 +246,13 @@ export default function App() {
                 🕶️
               </div>
             )}
+            {ufoEquipped && (
+              <div style={{ position: 'absolute', top: '-120px', left: '60%', transform: 'translateX(-50%)', zIndex: 46, fontSize: '180px' }}>
+                🛸
+              </div>
+            )}
             <img
-              src="/Moolah.png"
+              src="./Moolah.png"
               alt="Moolah"
               style={{ imageRendering: 'pixelated', width: '500px', height: '510px', filter: cowFilter }}
             />
@@ -283,7 +289,8 @@ export default function App() {
           {currentView === 'achievements' && <Achievements />}
           {currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} setCowFilter={setCowFilter}
            setCrownEquipped={setCrownEquipped} crownEquipped={crownEquipped} cowFilter={cowFilter}
-           setSunglassesEquipped={setSunglassesEquipped} sunglassesEquipped={sunglassesEquipped}/>}
+           setSunglassesEquipped={setSunglassesEquipped} sunglassesEquipped={sunglassesEquipped}
+           setUfoEquipped={setUfoEquipped} ufoEquipped = {ufoEquipped}/>}
           {currentView === 'friends' && <LeaderBoard coins={coins} setCoins={setCoins} userId={userId || ''} />}
           {currentView === 'profile' && <ProfilePage username={username} userId={userId || ''} />}
         </main>
