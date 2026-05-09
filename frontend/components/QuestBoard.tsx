@@ -118,7 +118,7 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
       id: 1,
       title: 'Daily Saver',
       description: 'Keep spending under $20 today',
-      xpReward: 50,
+      xpReward: 25,
       coinReward: 25,
       // Progress = dollars saved below the $20 limit
       // If user spent $8 → progress = 12/20
@@ -133,7 +133,7 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
       id: 2,
       title: 'Budget Master',
       description: 'Stay under your monthly budget',
-      xpReward: 200,
+      xpReward: 100,
       coinReward: 100,
       // Progress reflects percentage of budget remaining
       // Full progress if still under budget
