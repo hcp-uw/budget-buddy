@@ -40,8 +40,21 @@ const configuration = new Configuration({
 const plaidClient = new PlaidApi(configuration);
 
 // --- 2. SUPABASE CONFIGURATION ---
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+console.log('🔍 Environment Variables Check:');
+console.log('  SUPABASE_URL exists:', !!supabaseUrl);
+console.log('  SUPABASE_ANON_KEY exists:', !!supabaseKey);
+console.log('  VITE_SUPABASE_URL exists:', !!process.env.VITE_SUPABASE_URL);
+console.log('  VITE_SUPABASE_ANON_KEY exists:', !!process.env.VITE_SUPABASE_ANON_KEY);
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ CRITICAL: Supabase credentials not found!');
+  console.error('   Make sure .env has SUPABASE_URL and SUPABASE_ANON_KEY (without VITE_ prefix)');
+  process.exit(1);
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- HELPER ---
@@ -54,6 +67,7 @@ const prettyPrintResponse = (response) => {
 // ✅ CREATE LINK TOKEN - Called by frontend to initialize Plaid Link
 app.post('/api/create_link_token', async (req, res) => {
   try {
+    console.log('🔗 Creating link token...');
     const tokenResponse = await plaidClient.linkTokenCreate({
       user: { client_user_id: 'user_' + Date.now() },
       client_name: 'Budget Buddy',
@@ -61,11 +75,15 @@ app.post('/api/create_link_token', async (req, res) => {
       country_codes: ['US'],
       language: 'en',
     });
-    console.log('✅ Link token created');
+    console.log('✅ Link token created successfully');
     res.json(tokenResponse.data);
   } catch (error) {
-    console.error("❌ Plaid create_link_token error:", JSON.stringify(error.response?.data, null, 2));
-    res.status(500).json(error.response?.data || error.message);
+    console.error("❌ Plaid create_link_token error:", error.message);
+    console.error("Details:", error.response?.data || error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to create link token',
+      details: error.response?.data 
+    });
   }
 });
 
@@ -126,6 +144,10 @@ app.post('/api/set_access_token', function (request, response, next) {
       });
       ACCESS_TOKEN = tokenResponse.data.access_token;
       ITEM_ID = tokenResponse.data.item_id;
+      
+      console.log('🔍 DEBUG: ACCESS_TOKEN type:', typeof ACCESS_TOKEN);
+      console.log('🔍 DEBUG: ACCESS_TOKEN value:', ACCESS_TOKEN);
+      console.log('🔍 DEBUG: ACCESS_TOKEN length:', ACCESS_TOKEN?.length);
 
       if (!userId) {
         console.warn('⚠️ No user_id provided');
@@ -136,8 +158,8 @@ app.post('/api/set_access_token', function (request, response, next) {
         .from('plaid_items')
         .insert({
           user_id: userId,
-          plaid_access_token: ACCESS_TOKEN,
           plaid_item_id: ITEM_ID,
+          access_token: String(ACCESS_TOKEN),
           institution_name: institutionName,
           status: 'connected'
         })
@@ -147,7 +169,8 @@ app.post('/api/set_access_token', function (request, response, next) {
       if (error) {
         console.error('❌ Supabase Insert Error:', error);
       } else {
-        console.log('✅ Plaid item saved to Supabase');
+        console.log('✅ Plaid item saved to Supabase for user:', userId);
+        console.log('📝 Saved access token to DB');
       }
 
       response.json({ access_token: ACCESS_TOKEN, item_id: ITEM_ID, error: null });
@@ -160,11 +183,46 @@ app.post('/api/set_access_token', function (request, response, next) {
 
 // ✅ GET TRANSACTIONS - Fetch and sync transactions
 app.get('/api/transactions', function (request, response, next) {
-  console.log('📊 Fetching transactions...');
+  const userId = request.query.user_id;
+  console.log('📊 Fetching transactions for user:', userId);
   
+  if (!userId) {
+    return response.status(400).json({ error: 'user_id is required' });
+  }
+
   Promise.resolve()
     .then(async function () {
-      if (!ACCESS_TOKEN) {
+      // Get the access token from Supabase for this user
+      const { data: plaidItem, error: fetchError } = await supabase
+        .from('plaid_items')
+        .select('access_token, plaid_item_id')
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !plaidItem) {
+        console.error('❌ No Plaid item found for user:', fetchError);
+        return response.status(400).json({ error: 'No Plaid connection found. Please connect your bank first.' });
+      }
+
+      const accessToken = plaidItem.access_token;
+      console.log('🔍 DEBUG: Retrieved accessToken type:', typeof accessToken);
+      console.log('🔍 DEBUG: Retrieved accessToken value:', accessToken);
+      console.log('🔍 DEBUG: Retrieved accessToken length:', accessToken?.length);
+      
+      // If the token is hex-encoded (from bytea column), decode it
+      let decodedToken = accessToken;
+      if (typeof accessToken === 'string' && accessToken.startsWith('\\x')) {
+        console.log('🔄 Decoding hex-encoded token...');
+        try {
+          decodedToken = Buffer.from(accessToken.slice(2), 'hex').toString('utf8');
+          console.log('✅ Decoded token:', decodedToken);
+        } catch (e) {
+          console.error('❌ Failed to decode token:', e);
+          decodedToken = accessToken;
+        }
+      }
+      
+      if (!decodedToken) {
         return response.status(400).json({ error: 'No access token available' });
       }
 
@@ -174,15 +232,28 @@ app.get('/api/transactions', function (request, response, next) {
       let removed = [];
       let hasMore = true;
 
+      console.log('🔗 Starting transaction sync with Plaid...');
+      console.log('   Using access token:', decodedToken.substring(0, 20) + '...');
+
       while (hasMore) {
         const syncRequest = {
-          access_token: ACCESS_TOKEN,
+          access_token: decodedToken,
           cursor: cursor,
         };
+        console.log('📡 Calling transactionsSync, cursor:', cursor || 'null (initial)');
         const syncResponse = await plaidClient.transactionsSync(syncRequest);
         const data = syncResponse.data;
 
+        console.log('   Response: has_more=', data.has_more, 'added=', data.added?.length, 'modified=', data.modified?.length);
+
+        // Handle Plaid API quirk: empty cursor means retry
         cursor = data.next_cursor;
+        if (cursor === "") {
+          console.log('⏳ Empty cursor returned, waiting 2 seconds before retry...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+
         added = added.concat(data.added);
         modified = modified.concat(data.modified);
         removed = removed.concat(data.removed);
@@ -191,16 +262,19 @@ app.get('/api/transactions', function (request, response, next) {
         if (data.has_more === false) break;
       }
 
-      console.log(`✅ Found ${added.length} transactions`);
+      console.log(`✅ Found ${added.length} transactions total`);
 
       // Also sync to Supabase if you want to persist
       if (added.length > 0) {
         const transactionsToInsert = added.map(tx => ({
+          user_id: userId,
           plaid_transaction_id: tx.transaction_id,
+          plaid_item_id: plaidItem.plaid_item_id || tx.account_id,
           amount: tx.amount,
-          description: tx.description,
+          merchant_name: tx.merchant_name || tx.name,
           date: tx.date,
           category: tx.personal_finance_category?.primary || 'other',
+          pending: tx.pending || false,
         }));
 
         const { error: insertError } = await supabase
@@ -210,6 +284,8 @@ app.get('/api/transactions', function (request, response, next) {
 
         if (insertError) {
           console.warn('⚠️ Supabase transaction insert warning:', insertError.message);
+        } else {
+          console.log('✅ Transactions saved to Supabase');
         }
       }
 
@@ -234,35 +310,53 @@ app.post('/api/signup', async (req, res) => {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    const { data: existing } = await supabase
+    console.log('📝 Signup attempt for username:', username.trim());
+
+    const { data: existing, error: checkError } = await supabase
       .from('users_login')
       .select('username')
       .eq('username', username.trim())
       .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('❌ Error checking existing user:', checkError);
+      return res.status(500).json({ error: 'Database error: ' + checkError.message });
+    }
 
     if (existing) return res.status(409).json({ error: 'Username already taken' });
 
     const userId = usernameToUUID(username.trim());
     const budget = parseInt(monthlyBudget) || 2000;
 
+    console.log('  Creating user in users_login table...');
     const { error: loginError } = await supabase.from('users_login').insert([{
       username: username.trim(),
       password,
       monthly_budget_goal: budget
     }]);
-    if (loginError) return res.status(500).json({ error: loginError.message });
+    
+    if (loginError) {
+      console.error('❌ Signup error (users_login insert):', loginError);
+      return res.status(500).json({ error: 'Signup failed: ' + loginError.message });
+    }
 
     // Ensure user row exists for FK tables (points, streaks, etc.)
-    await supabase.from('users').upsert([{
+    console.log('  Creating user in users table...');
+    const { error: userError } = await supabase.from('users').upsert([{
       id: userId,
       email: `${username.trim().toLowerCase()}@local`
     }], { onConflict: 'id' });
 
+    if (userError) {
+      console.error('❌ Signup error (users insert):', userError);
+      return res.status(500).json({ error: 'User creation failed: ' + userError.message });
+    }
+
     console.log('✅ Signed up:', username.trim(), userId);
     res.json({ userId, username: username.trim(), monthlyBudget: budget });
   } catch (err) {
-    console.error('❌ Signup error:', err);
-    res.status(500).json({ error: 'Signup failed' });
+    console.error('❌ Signup error (exception):', err);
+    res.status(500).json({ error: 'Signup failed: ' + err.message });
   }
 });
 
@@ -274,6 +368,8 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
+    console.log('🔐 Login attempt for username:', username.trim());
+
     const { data, error } = await supabase
       .from('users_login')
       .select('*')
@@ -281,7 +377,15 @@ app.post('/api/login', async (req, res) => {
       .eq('password', password)
       .single();
 
-    if (error || !data) return res.status(401).json({ error: 'Invalid username or password' });
+    if (error) {
+      console.error('❌ Login error:', error);
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    if (!data) {
+      console.warn('⚠️ No user found for username:', username.trim());
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
 
     const userId = usernameToUUID(username.trim());
 
@@ -293,8 +397,8 @@ app.post('/api/login', async (req, res) => {
     console.log('✅ Logged in:', username.trim(), userId);
     res.json({ userId, username: data.username, monthlyBudget: data.monthly_budget_goal || 2000 });
   } catch (err) {
-    console.error('❌ Login error:', err);
-    res.status(500).json({ error: 'Login failed' });
+    console.error('❌ Login error (exception):', err);
+    res.status(500).json({ error: 'Login failed: ' + err.message });
   }
 });
 
@@ -353,6 +457,29 @@ app.put('/api/update-budget', async (req, res) => {
 // ✅ HEALTH CHECK
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ✅ SANDBOX TEST - Verify Plaid configuration
+app.get('/api/sandbox-test', (req, res) => {
+  res.json({
+    status: 'ok',
+    plaid: {
+      environment: process.env.PLAID_ENV || 'sandbox',
+      hasClientId: !!process.env.PLAID_CLIENT_ID,
+      hasSecret: !!process.env.PLAID_SECRET,
+      sandboxTestCredentials: {
+        bank: 'Plaid Sandbox Bank',
+        institution_id: 'ins_127537',
+        username: 'user_good',
+        password: 'pass_good',
+        mfa: '1111',
+        note: 'Use these exact credentials (lowercase) in the Plaid Link flow'
+      }
+    },
+    supabase: {
+      connected: !!supabaseUrl,
+    }
+  });
 });
 
 // ✅ START SERVER

@@ -25,7 +25,7 @@ export function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/signup', {
+      const res = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), password, monthlyBudget: Number(budgetInput) })
@@ -46,7 +46,7 @@ export function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/login', {
+      const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), password })

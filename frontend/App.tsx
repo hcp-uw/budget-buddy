@@ -6,6 +6,7 @@ import { Shop } from './components/Shop';
 import { LeaderBoard } from './components/LeaderBoard';
 import { HomePage } from './components/HomePage';
 import { LoginPage } from './components/LoginPage';
+import { PlaidConnectionPage } from './components/PlaidConnectionPage';
 import { ProfilePage } from './components/ProfilePage';
 import { loadGameState, saveGameState } from './components/databaseService';
 
@@ -20,7 +21,7 @@ import {
   User
 } from 'lucide-react';
 
-type View = 'start' | 'login' | 'dashboard' | 'quests' | 'achievements' | 'shop' | 'friends' | 'profile';
+type View = 'start' | 'login' | 'plaid' | 'dashboard' | 'quests' | 'achievements' | 'shop' | 'friends' | 'profile';
 
 const SESSION_KEY = 'budgetbuddy_session';
 
@@ -80,7 +81,8 @@ export default function App() {
       setCoins(coins);
       setStreak(streakCount);
     });
-    setCurrentView('dashboard');
+    // Route through Plaid connection after login
+    setCurrentView('plaid');
   };
 
   const handleLogout = () => {
@@ -93,6 +95,17 @@ export default function App() {
     setXp(0);
     setStreak(1);
     setMonthlyBudget(2000);
+  };
+
+  const handlePlaidConnected = (transactions: any[]) => {
+    console.log('✅ Plaid connected! Transactions:', transactions.length);
+    setUserTransactions(transactions);
+    setCurrentView('dashboard');
+  };
+
+  const handleSkipPlaid = () => {
+    console.log('⏭️ Skipped Plaid connection');
+    setCurrentView('dashboard');
   };
 
   const handleBudgetChange = (newBudget: number) => {
@@ -125,6 +138,17 @@ export default function App() {
       <LoginPage
         onBack={() => setCurrentView('start')}
         onLoginSuccess={handleLoginSuccess}
+      />
+    );
+  }
+
+  if (currentView === 'plaid' && userId) {
+    return (
+      <PlaidConnectionPage
+        userId={userId}
+        username={username}
+        onPlaidConnected={handlePlaidConnected}
+        onSkip={handleSkipPlaid}
       />
     );
   }
