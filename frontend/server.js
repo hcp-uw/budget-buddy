@@ -154,20 +154,54 @@ app.post('/api/set_access_token', function (request, response, next) {
         return response.json({ access_token: ACCESS_TOKEN, item_id: ITEM_ID, error: 'No user_id' });
       }
 
-      const { data, error } = await supabase
+      // Check if user already has a Plaid item connected
+      const { data: existingItems, error: fetchError } = await supabase
         .from('plaid_items')
-        .insert({
-          user_id: userId,
-          plaid_item_id: ITEM_ID,
-          access_token: String(ACCESS_TOKEN),
-          institution_name: institutionName,
-          status: 'connected'
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', userId);
+
+      if (fetchError) {
+        console.error('❌ Error checking existing items:', fetchError);
+      }
+
+      let data, error;
+
+      if (existingItems && existingItems.length > 0) {
+        // Update existing plaid item
+        console.log('🔄 Updating existing Plaid item for user...');
+        const result = await supabase
+          .from('plaid_items')
+          .update({
+            plaid_item_id: ITEM_ID,
+            access_token: String(ACCESS_TOKEN),
+            institution_name: institutionName,
+            status: 'connected'
+          })
+          .eq('user_id', userId)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      } else {
+        // Insert new plaid item
+        console.log('➕ Creating new Plaid item for user...');
+        const result = await supabase
+          .from('plaid_items')
+          .insert({
+            user_id: userId,
+            plaid_item_id: ITEM_ID,
+            access_token: String(ACCESS_TOKEN),
+            institution_name: institutionName,
+            status: 'connected'
+          })
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) {
-        console.error('❌ Supabase Insert Error:', error);
+        console.error('❌ Supabase Save Error:', error);
       } else {
         console.log('✅ Plaid item saved to Supabase for user:', userId);
         console.log('📝 Saved access token to DB');
@@ -192,17 +226,20 @@ app.get('/api/transactions', function (request, response, next) {
 
   Promise.resolve()
     .then(async function () {
-      // Get the access token from Supabase for this user
-      const { data: plaidItem, error: fetchError } = await supabase
+      // Get the most recent access token from Supabase for this user
+      const { data: plaidItems, error: fetchError } = await supabase
         .from('plaid_items')
         .select('access_token, plaid_item_id')
         .eq('user_id', userId)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (fetchError || !plaidItem) {
+      if (fetchError || !plaidItems || plaidItems.length === 0) {
         console.error('❌ No Plaid item found for user:', fetchError);
         return response.status(400).json({ error: 'No Plaid connection found. Please connect your bank first.' });
       }
+
+      const plaidItem = plaidItems[0];
 
       const accessToken = plaidItem.access_token;
       console.log('🔍 DEBUG: Retrieved accessToken type:', typeof accessToken);
