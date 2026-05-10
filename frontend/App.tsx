@@ -82,8 +82,24 @@ export default function App() {
       setCoins(coins);
       setStreak(streakCount);
     });
-    // Route through Plaid connection after login
-    setCurrentView('plaid');
+    
+    // Check if user already has Plaid connection
+    fetch(`/api/check-plaid-connection?user_id=${uid}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.hasConnection) {
+          console.log('✅ User has existing Plaid connection, going to dashboard');
+          setCurrentView('dashboard');
+        } else {
+          console.log('⏳ User needs to connect Plaid');
+          setCurrentView('plaid');
+        }
+      })
+      .catch(err => {
+        console.error('Error checking Plaid connection:', err);
+        // Default to plaid if check fails
+        setCurrentView('plaid');
+      });
   };
 
   const handleLogout = () => {

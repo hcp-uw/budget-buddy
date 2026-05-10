@@ -53,7 +53,14 @@ export function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
       });
       const data = await res.json();
       if (!res.ok) return setErrorMsg(data.error || 'Login failed');
-      onLoginSuccess(data.monthlyBudget, [], data.username, data.userId);
+      
+      // 📋 Fetch existing transactions for this user
+      const txRes = await fetch(`/api/existing-transactions?user_id=${data.userId}`);
+      const txData = await txRes.json();
+      const transactions = txData.transactions || [];
+      
+      console.log(`✅ Login successful - loading ${transactions.length} existing transactions`);
+      onLoginSuccess(data.monthlyBudget, transactions, data.username, data.userId);
     } catch {
       setErrorMsg('Could not reach server. Is it running?');
     } finally {

@@ -215,6 +215,42 @@ app.post('/api/set_access_token', function (request, response, next) {
     });
 });
 
+// ✅ GET EXISTING TRANSACTIONS - Get transactions already stored in DB for a user
+app.get('/api/existing-transactions', async (req, res) => {
+  try {
+    const userId = req.query.user_id;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    console.log('📋 Fetching existing transactions for user:', userId);
+
+    const { data: transactions, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: false });
+
+    if (error) {
+      console.error('❌ Error fetching transactions:', error);
+      return res.status(500).json({ error: 'Failed to fetch transactions' });
+    }
+
+    console.log(`✅ Found ${transactions?.length || 0} existing transactions`);
+    
+    res.json({
+      transactions: transactions || [],
+      added: transactions || [],
+      modified: [],
+      removed: [],
+    });
+  } catch (err) {
+    console.error('❌ Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ✅ GET TRANSACTIONS - Fetch and sync transactions
 app.get('/api/transactions', function (request, response, next) {
   const userId = request.query.user_id;
@@ -394,6 +430,40 @@ app.post('/api/signup', async (req, res) => {
   } catch (err) {
     console.error('❌ Signup error (exception):', err);
     res.status(500).json({ error: 'Signup failed: ' + err.message });
+  }
+});
+
+// ✅ LOGIN
+// ✅ CHECK PLAID CONNECTION - Returns true if user has Plaid connected
+app.get('/api/check-plaid-connection', async (req, res) => {
+  try {
+    const userId = req.query.user_id;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    console.log('🔍 Checking Plaid connection for user:', userId);
+
+    const { data: plaidItems, error } = await supabase
+      .from('plaid_items')
+      .select('id, status')
+      .eq('user_id', userId)
+      .eq('status', 'connected')
+      .limit(1);
+
+    if (error) {
+      console.error('❌ Error checking Plaid connection:', error);
+      return res.status(500).json({ error: 'Failed to check connection' });
+    }
+
+    const hasConnection = plaidItems && plaidItems.length > 0;
+    console.log(hasConnection ? '✅ User has Plaid connection' : '❌ User has no Plaid connection');
+    
+    res.json({ hasConnection });
+  } catch (err) {
+    console.error('❌ Error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
