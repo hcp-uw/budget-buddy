@@ -13,140 +13,51 @@ import {
   Shield
 } from 'lucide-react';
 
-const achievements = [
-  {
-    id: 1,
-    title: 'First Steps',
-    description: 'Complete your first quest',
-    icon: Star,
-    unlocked: true,
-    progress: 1,
-    total: 1,
-    xpReward: 50,
-    rarity: 'common'
-  },
-  {
-    id: 2,
-    title: 'Penny Pincher',
-    description: 'Save $100 in a single week',
-    icon: Coins,
-    unlocked: true,
-    progress: 1,
-    total: 1,
-    xpReward: 100,
-    rarity: 'common'
-  },
-  {
-    id: 3,
-    title: 'Streak Master',
-    description: 'Maintain a 30-day streak',
-    icon: Flame,
-    unlocked: false,
-    progress: 15,
-    total: 30,
-    xpReward: 200,
-    rarity: 'rare'
-  },
-  {
-    id: 4,
-    title: 'Budget Boss',
-    description: 'Stay under budget for 3 months',
-    icon: Crown,
-    unlocked: false,
-    progress: 1,
-    total: 3,
-    xpReward: 500,
-    rarity: 'epic'
-  },
-  {
-    id: 5,
-    title: 'Quest Hunter',
-    description: 'Complete 50 quests',
-    icon: Target,
-    unlocked: false,
-    progress: 23,
-    total: 50,
-    xpReward: 300,
-    rarity: 'rare'
-  },
-  {
-    id: 6,
-    title: 'Savings Champion',
-    description: 'Save $10,000 total',
-    icon: Trophy,
-    unlocked: false,
-    progress: 4200,
-    total: 10000,
-    xpReward: 1000,
-    rarity: 'legendary'
-  },
-  {
-    id: 7,
-    title: 'Early Bird',
-    description: 'Log in before 8 AM for 7 days',
-    icon: Calendar,
-    unlocked: true,
-    progress: 1,
-    total: 1,
-    xpReward: 75,
-    rarity: 'common'
-  },
-  {
-    id: 8,
-    title: 'Financial Fortress',
-    description: 'Build emergency fund of $5,000',
-    icon: Shield,
-    unlocked: false,
-    progress: 2800,
-    total: 5000,
-    xpReward: 750,
-    rarity: 'epic'
-  },
-  {
-    id: 9,
-    title: 'Level 25',
-    description: 'Reach level 25',
-    icon: TrendingUp,
-    unlocked: false,
-    progress: 12,
-    total: 25,
-    xpReward: 500,
-    rarity: 'rare'
-  },
-  {
-    id: 10,
-    title: 'Perfect Week',
-    description: 'Complete all daily quests for a week',
-    icon: Award,
-    unlocked: false,
-    progress: 5,
-    total: 7,
-    xpReward: 250,
-    rarity: 'rare'
-  },
-  {
-    id: 11,
-    title: 'Power Saver',
-    description: 'Save $500 in one month',
-    icon: Zap,
-    unlocked: false,
-    progress: 450,
-    total: 500,
-    xpReward: 200,
-    rarity: 'rare'
-  },
-  {
-    id: 12,
-    title: 'Legendary Investor',
-    description: 'Save $50,000 total',
-    icon: Crown,
-    unlocked: false,
-    progress: 4200,
-    total: 50000,
-    xpReward: 5000,
-    rarity: 'legendary'
-  }
-];
+interface Transaction {
+  transaction_id?: string;
+  name?: string;
+  merchant_name?: string;
+  amount?: number;
+  date?: string;
+  category?: string[];
+  personal_finance_category?: { primary?: string };
+}
+
+interface AchievementsProps {
+  transactions?: Transaction[];
+  budget?: number;
+  coins?: number;
+  xp?: number;
+}
+
+interface Achievement {
+  id: number;
+  title: string;
+  description: string;
+  icon: any;
+  unlocked: boolean;
+  progress: number;
+  total: number;
+  xpReward: number;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
+// ✅ DATE UTILITY FUNCTIONS
+function getMonthStart(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1);
+}
+
+function getMonthEnd(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+}
+
+function isDateInRange(dateStr: string | undefined, start: Date, end: Date): boolean {
+  if (!dateStr) return false;
+  const txDate = new Date(dateStr);
+  return txDate >= start && txDate <= end;
+}
 
 const rarityColors = {
   common: { bg: '#c7b8ea', glow: '#a78bfa', text: 'Common' },
@@ -155,9 +66,135 @@ const rarityColors = {
   legendary: { bg: '#ffd93d', glow: '#ff6b9d', text: 'Legendary' }
 };
 
-export function Achievements() {
-  const unlockedCount = achievements.filter(a => a.unlocked).length;
-  const totalXP = achievements.filter(a => a.unlocked).reduce((sum, a) => sum + a.xpReward, 0);
+export function Achievements({ transactions = [], budget = 2000, coins = 0, xp = 0 }: AchievementsProps) {
+  // 📅 Filter transactions to THIS MONTH only
+  const monthStart = getMonthStart();
+  const monthEnd = getMonthEnd();
+  const monthTransactions = transactions.filter(t => isDateInRange(t.date, monthStart, monthEnd));
+
+  // 📊 Calculate spending and savings
+  const totalSpent = monthTransactions.reduce((s: number, t: Transaction) => s + (t.amount && t.amount > 0 ? t.amount : 0), 0);
+  const remaining = budget - totalSpent;
+  const savedAmount = Math.max(0, remaining);
+  const level = Math.floor(xp / 500) + 1;
+
+  // 🏆 Calculate achievement progress dynamically based on REAL transactions
+  const calculateAchievements = (): Achievement[] => [
+    {
+      id: 1,
+      title: 'First Steps',
+      description: 'Complete your first transaction',
+      icon: Star,
+      unlocked: transactions.length > 0,
+      progress: transactions.length > 0 ? 1 : 0,
+      total: 1,
+      xpReward: 50,
+      rarity: 'common'
+    },
+    {
+      id: 2,
+      title: 'Penny Pincher',
+      description: 'Save $100 in this month',
+      icon: Coins,
+      unlocked: savedAmount >= 100,
+      progress: Math.min(100, Math.round(savedAmount)),
+      total: 100,
+      xpReward: 100,
+      rarity: 'common'
+    },
+    {
+      id: 3,
+      title: 'Budget Boss',
+      description: 'Stay under budget this month',
+      icon: Crown,
+      unlocked: remaining >= 0 && transactions.length > 0,
+      progress: remaining >= 0 ? 1 : 0,
+      total: 1,
+      xpReward: 200,
+      rarity: 'rare'
+    },
+    {
+      id: 4,
+      title: 'Power Saver',
+      description: 'Save $500 in one month',
+      icon: Zap,
+      unlocked: savedAmount >= 500,
+      progress: Math.min(500, Math.round(savedAmount)),
+      total: 500,
+      xpReward: 200,
+      rarity: 'rare'
+    },
+    {
+      id: 5,
+      title: 'Savings Champion',
+      description: 'Save $1,000 total',
+      icon: Trophy,
+      unlocked: savedAmount >= 1000,
+      progress: Math.min(1000, Math.round(savedAmount)),
+      total: 1000,
+      xpReward: 500,
+      rarity: 'epic'
+    },
+    {
+      id: 6,
+      title: 'Financial Fortress',
+      description: 'Save $5,000 total',
+      icon: Shield,
+      unlocked: savedAmount >= 5000,
+      progress: Math.min(5000, Math.round(savedAmount)),
+      total: 5000,
+      xpReward: 750,
+      rarity: 'epic'
+    },
+    {
+      id: 7,
+      title: 'Level 25',
+      description: 'Reach level 25',
+      icon: TrendingUp,
+      unlocked: level >= 25,
+      progress: Math.min(level, 25),
+      total: 25,
+      xpReward: 500,
+      rarity: 'rare'
+    },
+    {
+      id: 8,
+      title: 'Legendary Investor',
+      description: 'Save $10,000 total',
+      icon: Crown,
+      unlocked: savedAmount >= 10000,
+      progress: Math.min(10000, Math.round(savedAmount)),
+      total: 10000,
+      xpReward: 2000,
+      rarity: 'legendary'
+    },
+    {
+      id: 9,
+      title: 'Transaction Tracker',
+      description: 'Track 100 transactions',
+      icon: Target,
+      unlocked: transactions.length >= 100,
+      progress: Math.min(transactions.length, 100),
+      total: 100,
+      xpReward: 300,
+      rarity: 'rare'
+    },
+    {
+      id: 10,
+      title: 'Money Master',
+      description: 'Reach level 50',
+      icon: Award,
+      unlocked: level >= 50,
+      progress: Math.min(level, 50),
+      total: 50,
+      xpReward: 1000,
+      rarity: 'legendary'
+    },
+  ];
+
+  const achievements = calculateAchievements();
+  const unlockedCount = achievements.filter((a: Achievement) => a.unlocked).length;
+  const totalXP = achievements.filter((a: Achievement) => a.unlocked).reduce((sum: number, a: Achievement) => sum + a.xpReward, 0);
 
   return (
     <div className="space-y-6">

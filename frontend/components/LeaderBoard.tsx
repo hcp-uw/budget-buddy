@@ -7,17 +7,19 @@ import { Contribute } from './Contribute';
 const GroupStandings = ({ 
   groupId, 
   circleName, 
-  inviteCode, // Added this prop
+  inviteCode,
   refreshTrigger,
   currentUserId,
-  onContributionSuccess
+  onContributionSuccess,
+  monthlyBudget = 2000
 }: { 
   groupId: string; 
   circleName: string; 
-  inviteCode: string; // Added this type
+  inviteCode: string;
   refreshTrigger: number;
   currentUserId: string;
   onContributionSuccess: () => void;
+  monthlyBudget?: number;
 }) => {
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -122,7 +124,8 @@ const GroupStandings = ({
                             {activeActionRow === m.user_id && (
                               <Contribute 
                                 groupId={groupId} 
-                                userId={currentUserId} 
+                                userId={currentUserId}
+                                monthlyBudget={monthlyBudget}
                                 onClose={() => setActiveActionRow(null)}
                                 onSuccess={() => {
                                   setActiveActionRow(null); 
@@ -145,7 +148,7 @@ const GroupStandings = ({
   );
 };
 
-export const LeaderBoard = ({ coins, setCoins, userId }: { coins: number; setCoins: any; userId: string }) => {
+export const LeaderBoard = ({ coins, setCoins, userId, monthlyBudget = 2000, onContributionRefresh }: { coins: number; setCoins: any; userId: string; monthlyBudget?: number; onContributionRefresh?: () => Promise<void> }) => {
   const USER_ID = userId;
   const [myGroups, setMyGroups] = useState<any[]>([]);
   
@@ -202,6 +205,10 @@ export const LeaderBoard = ({ coins, setCoins, userId }: { coins: number; setCoi
 
   const handleContributionSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
+    // Refresh transactions in parent (App) so dashboard and quests update
+    if (onContributionRefresh) {
+      onContributionRefresh();
+    }
   };
 
   return (
@@ -247,9 +254,10 @@ export const LeaderBoard = ({ coins, setCoins, userId }: { coins: number; setCoi
           <GroupStandings 
             groupId={activeGroup.id} 
             circleName={activeGroup.name}
-            inviteCode={activeGroup.inviteCode} // Passed the new invite code here
+            inviteCode={activeGroup.inviteCode}
             refreshTrigger={refreshTrigger} 
             currentUserId={USER_ID}
+            monthlyBudget={monthlyBudget}
             onContributionSuccess={handleContributionSuccess}
           />
         </div>

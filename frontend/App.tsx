@@ -40,6 +40,7 @@ export default function App() {
   const [crownEquipped, setCrownEquipped] = useState(false);
   const [sunglassesEquipped, setSunglassesEquipped] = useState(false);
   const [ufoEquipped, setUfoEquipped] = useState(false);
+  const [contributionRefreshTrigger, setContributionRefreshTrigger] = useState(0);
 
   // Restore session on mount
   useEffect(() => {
@@ -134,6 +135,23 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, newBudget })
       }).catch(console.error);
+    }
+  };
+
+  // Re-fetch transactions after contributions are made
+  const refreshTransactions = async () => {
+    if (!userId) return;
+    try {
+      const txRes = await fetch(`/api/existing-transactions?user_id=${userId}`);
+      if (!txRes.ok) throw new Error("Failed to fetch transactions");
+      const txData = await txRes.json();
+      const transactions = txData.transactions || [];
+      setUserTransactions(transactions);
+      // Trigger dashboard to re-fetch circle contributions
+      setContributionRefreshTrigger(prev => prev + 1);
+      console.log("✅ Transactions refreshed after contribution");
+    } catch (err) {
+      console.error("Failed to refresh transactions:", err);
     }
   };
 
@@ -314,7 +332,9 @@ export default function App() {
               streak={streak}
               initialBudget={monthlyBudget}
               transactions={userTransactions}
+              userId={userId || ''}
               onBudgetChange={handleBudgetChange}
+              refreshTrigger={contributionRefreshTrigger}
             />
           )}
           {currentView === 'quests' && (
@@ -326,12 +346,19 @@ export default function App() {
               budget={monthlyBudget}
             />
           )}
-          {currentView === 'achievements' && <Achievements />}
+          {currentView === 'achievements' && (
+            <Achievements
+              transactions={userTransactions}
+              budget={monthlyBudget}
+              coins={coins}
+              xp={xp}
+            />
+          )}
           {currentView === 'shop' && <Shop coins={coins} setCoins={setCoins} setCowFilter={setCowFilter}
            setCrownEquipped={setCrownEquipped} crownEquipped={crownEquipped} cowFilter={cowFilter}
            setSunglassesEquipped={setSunglassesEquipped} sunglassesEquipped={sunglassesEquipped}
            setUfoEquipped={setUfoEquipped} ufoEquipped = {ufoEquipped}/>}
-          {currentView === 'friends' && <LeaderBoard coins={coins} setCoins={setCoins} userId={userId || ''} />}
+          {currentView === 'friends' && <LeaderBoard coins={coins} setCoins={setCoins} userId={userId || ''} monthlyBudget={monthlyBudget} onContributionRefresh={refreshTransactions} />}
           {currentView === 'profile' && <ProfilePage username={username} userId={userId || ''} />}
         </main>
       </div>

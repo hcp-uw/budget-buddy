@@ -14,6 +14,7 @@ import {
   Wifi,
   HelpCircle
 } from 'lucide-react';
+import { supabase } from './supabaseClient';
 
 interface Transaction {
   transaction_id?: string;
@@ -33,7 +34,26 @@ interface GameDashboardProps {
   streak?: number;
   initialBudget?: number;
   transactions?: Transaction[];
+  userId?: string;
+  refreshTrigger?: number;
   onBudgetChange?: (newBudget: number) => void;
+}
+
+// ✅ DATE UTILITY FUNCTIONS
+function getMonthStart(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1);
+}
+
+function getMonthEnd(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+}
+
+function isDateInRange(dateStr: string | undefined, start: Date, end: Date): boolean {
+  if (!dateStr) return false;
+  const txDate = new Date(dateStr);
+  return txDate >= start && txDate <= end;
 }
 
 // Map Plaid categories to icons + colors
@@ -58,7 +78,7 @@ function formatDate(dateStr?: string) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialBudget = 2000, transactions = [], onBudgetChange }: GameDashboardProps) {
+export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialBudget = 2000, transactions = [], userId = '', refreshTrigger = 0, onBudgetChange }: GameDashboardProps) {
   // Level derived from XP: each level requires 500 XP
   const level = Math.floor(xp / 500) + 1;
   const xpForCurrentLevel = (level - 1) * 500;
@@ -68,31 +88,67 @@ export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialB
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
   const [budget, setBudget] = useState(initialBudget);
+  const [circleContributions, setCircleContributions] = useState(0);
 
   // Keep budget in sync if parent changes it (e.g. on session restore)
   useEffect(() => {
     setBudget(initialBudget);
   }, [initialBudget]);
 
-  // Spending is $0 when there are no transactions (Plaid not connected)
-  const spent = transactions.length > 0
-    ? transactions.reduce((sum, tx) => {
+  // 🔄 Fetch circle contributions this month
+  useEffect(() => {
+    if (!userId) return;
+    
+    const fetchCircleContributions = async () => {
+      try {
+        const monthStart = getMonthStart();
+        const monthEnd = getMonthEnd();
+        
+        const { data, error } = await supabase
+          .from('leaderboard_groups')
+          .select('contribution')
+          .eq('user_id', userId);
+
+        if (error) throw error;
+
+        // Sum all circle contributions
+        const totalContributions = (data || []).reduce((sum, row) => sum + (row.contribution || 0), 0);
+        setCircleContributions(totalContributions);
+      } catch (err) {
+        console.error("Failed to fetch circle contributions:", err);
+      }
+    };
+
+    fetchCircleContributions();
+  }, [userId, refreshTrigger]);
+
+  // 📅 Filter transactions to THIS MONTH only
+  const monthStart = getMonthStart();
+  const monthEnd = getMonthEnd();
+  const monthTransactions = transactions.filter(t => isDateInRange(t.date, monthStart, monthEnd));
+
+  // 📊 Calculate spending for THIS MONTH (includes bank transactions + circle contributions)
+  const transactionSpending = monthTransactions.length > 0
+    ? monthTransactions.reduce((sum: number, tx: Transaction) => {
         const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount || 0);
         return sum + (amount > 0 ? amount : 0);
       }, 0)
     : 0;
 
+  // ✨ TOTAL SPENDING = Bank Transactions + Circle Contributions
+  const spent = transactionSpending + circleContributions;
+
   const remaining = budget - spent;
   const spentPercent = Math.min((spent / budget) * 100, 100);
 
   const stats = [
-    { label: 'Spent This Month', value: `$${Math.round(spent).toLocaleString()}`, icon: TrendingUp, color: '#4ecdc4', xp: transactions.length > 0 ? 'Live data' : 'Link bank to track' },
+    { label: 'Spent This Month', value: `$${Math.round(spent).toLocaleString()}`, icon: TrendingUp, color: '#4ecdc4', xp: monthTransactions.length > 0 ? '✓ Synced' : 'Link bank to track' },
     { label: 'Active Streak', value: `${streak} day${streak !== 1 ? 's' : ''}`, icon: Flame, color: '#ff6b9d', xp: 'Keep it up!' },
     { label: 'Budget Used', value: `${Math.round(spentPercent)}%`, icon: Target, color: '#ffd93d', xp: remaining >= 0 ? `$${Math.round(remaining)} left` : 'Over budget!' },
     { label: 'Total XP', value: `${xp}`, icon: Star, color: '#a78bfa', xp: `Level ${level}` },
   ];
 
-  const hasRealTransactions = transactions.length > 0;
+  const hasRealTransactions = monthTransactions.length > 0;
 
   return (
     <>
@@ -242,7 +298,7 @@ export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialB
 
         {hasRealTransactions ? (
           <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-            {transactions.slice(0, 30).map((tx, i) => {
+            {monthTransactions.slice(0, 30).map((tx, i) => {
               const { icon: CatIcon, color } = getCategoryIcon(tx);
               const isNegative = (tx.amount ?? 0) < 0; // refund/credit
               return (

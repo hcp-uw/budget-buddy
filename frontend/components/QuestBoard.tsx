@@ -19,6 +19,8 @@ interface Quest {
   difficulty: 'easy' | 'medium' | 'hard';
   timeLeft?: string;
   completed: boolean;
+  canClaim?: boolean; // Whether time period has ended and quest can be claimed
+  failed?: boolean; // Whether quest was failed (e.g., over budget)
 }
 
 interface Transaction {
@@ -41,35 +43,82 @@ interface QuestBoardProps {
   budget?: number;
 }
 
+// ✅ DATE UTILITY FUNCTIONS
+function getMonthStart(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1);
+}
+
+function getMonthEnd(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+}
+
+function getWeekStart(): Date {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
+  return new Date(now.getFullYear(), now.getMonth(), diff);
+}
+
+function getWeekEnd(): Date {
+  const weekStart = getWeekStart();
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  weekEnd.setHours(23, 59, 59);
+  return weekEnd;
+}
+
+function getTodayStart(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function getTodayEnd(): Date {
+  const today = getTodayStart();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setMilliseconds(-1);
+  return tomorrow;
+}
+
+function isDateInRange(dateStr: string | undefined, start: Date, end: Date): boolean {
+  if (!dateStr) return false;
+  const txDate = new Date(dateStr);
+  return txDate >= start && txDate <= end;
+}
+
 export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = [], budget = 2000 }: QuestBoardProps) {
   const hasReal = transactions.length > 0;
 
-  // Derive real progress values from Plaid transactions
-  const txCount = transactions.length;
-  const totalSpent = transactions.reduce((s, t) => s + (t.amount && t.amount > 0 ? t.amount : 0), 0);
+  // 📅 Filter transactions to THIS MONTH only
+  const monthStart = getMonthStart();
+  const monthEnd = getMonthEnd();
+  const monthTransactions = transactions.filter(t => isDateInRange(t.date, monthStart, monthEnd));
+
+  // 📊 Calculate month-based metrics
+  const totalSpent = monthTransactions.reduce((s, t) => s + (t.amount && t.amount > 0 ? t.amount : 0), 0);
   const remaining = budget - totalSpent;
   const savedAmount = Math.max(0, remaining);
 
-  // Today's spending (transactions from today)
-  const today = new Date().toISOString().split('T')[0];
-  const spentToday = transactions
-    .filter(t => t.date === today && (t.amount ?? 0) > 0)
-    .reduce((s, t) => s + (t.amount ?? 0), 0);
+  // 📅 Today's spending (transactions from TODAY only)
+  const todayStart = getTodayStart();
+  const todayEnd = getTodayEnd();
+  const todayTransactions = monthTransactions.filter(t => isDateInRange(t.date, todayStart, todayEnd));
+  const spentToday = todayTransactions.reduce((s, t) => {
+    const amount = t.amount ?? 0;
+    return s + (amount > 0 ? amount : 0);
+  }, 0);
   const savedToday = Math.max(0, 20 - spentToday); // quest goal: save $20 today (spend <$20)
 
   const getTimeLeft = (targetDate: Date) => {
     const diff = targetDate.getTime() - Date.now();
 
-    if (diff <= 0) return 'Expired';
+    if (diff <= 0) return 'Ready to claim!';
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
     const minutes = Math.floor((diff / (1000 * 60)) % 60);
-
-    // Example:
-    // 2d 5h 12m left
-    // 5h 42m left
-    // 12m left
 
     if (days > 0) {
       return `${days}d ${hours}h ${minutes}m left`;
@@ -82,92 +131,77 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
     return `${minutes}m left`;
   };
 
-  const getNextMidnight = () => {
-    const now = new Date();
-
-    return new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + 1, // tomorrow
-      0,
-      0,
-      0
-    );
+  const isTimePeriodComplete = (targetDate: Date): boolean => {
+    return Date.now() >= targetDate.getTime();
   };
 
-  const getNextMonth = () => {
-    const now = new Date();
+  // ✅ Quest time periods
+  const dailyQuestEnd = new Date(getTodayEnd().getTime() + 1000); // Tomorrow at 00:00
+  const monthlyQuestEnd = getMonthEnd();
 
-    return new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      1,
-      0,
-      0,
-      0
-    );
+  // ✅ Recalculate quests with real transaction data
+  const calculateQuests = (): Quest[] => {
+    const baseQuests: Quest[] = [
+      {
+        id: 1,
+        title: 'Daily Saver',
+        description: 'Keep spending under $20 today',
+        xpReward: 25,
+        coinReward: 25,
+        progress: hasReal ? Math.max(0, Math.min(20, Math.round(savedToday))) : 0,
+        total: 20,
+        difficulty: 'easy',
+        timeLeft: getTimeLeft(dailyQuestEnd),
+        completed: false,
+        failed: false,
+        canClaim: isTimePeriodComplete(dailyQuestEnd) && (hasReal ? savedToday >= 20 : false),
+      },
+      {
+        id: 2,
+        title: 'Budget Master',
+        description: 'Stay under your monthly budget',
+        xpReward: 100,
+        coinReward: 100,
+        // Only claimable when month ends while under budget
+        progress: hasReal ? Math.min(100, Math.round((remaining / budget) * 100)) : 0,
+        total: 100,
+        difficulty: 'hard',
+        timeLeft: getTimeLeft(monthlyQuestEnd),
+        completed: false,
+        failed: isTimePeriodComplete(monthlyQuestEnd) && remaining < 0, // ✅ FAILS if over budget at month end
+        canClaim: isTimePeriodComplete(monthlyQuestEnd) && remaining >= 0,
+      },
+      {
+        id: 3,
+        title: 'Super Saver',
+        description: 'Save $500 this month',
+        xpReward: 500,
+        coinReward: 250,
+        progress: hasReal ? Math.max(0, Math.min(500, Math.round(savedAmount))) : 0,
+        total: 500,
+        difficulty: 'hard',
+        timeLeft: getTimeLeft(monthlyQuestEnd),
+        completed: false,
+        failed: false,
+        canClaim: isTimePeriodComplete(monthlyQuestEnd) && savedAmount >= 500,
+      },
+    ];
+    return baseQuests;
   };
 
-  const dailyQuestEnd = getNextMidnight();
-  const monthlyQuestEnd = getNextMonth();
-
-  const [quests, setQuests] = useState<Quest[]>([
-    
-    
-    {
-      id: 1,
-      title: 'Daily Saver',
-      description: 'Keep spending under $20 today',
-      xpReward: 25,
-      coinReward: 25,
-      // Progress = dollars saved below the $20 limit
-      // If user spent $8 → progress = 12/20
-      // If user spent $25 → progress = 0/20
-      progress: hasReal ? Math.max(0, Math.min(20, Math.round(20 - spentToday))): 0,
-      total: 20,
-      difficulty: 'easy',
-      timeLeft: getTimeLeft(dailyQuestEnd),
-      completed: false
-    },
-    {
-      id: 2,
-      title: 'Budget Master',
-      description: 'Stay under your monthly budget',
-      xpReward: 100,
-      coinReward: 100,
-      // Progress reflects percentage of budget remaining
-      // Full progress if still under budget
-      progress: hasReal ? Math.max(0, Math.min(7, Math.round((remaining / budget) * 7))) : 0,
-      total: 100,
-      difficulty: 'hard',
-      timeLeft: getTimeLeft(monthlyQuestEnd),
-      completed: false
-    },
-    {
-      id: 3,
-      title: 'Super Saver',
-      description: 'Save $500 this month',
-      xpReward: 500,
-      coinReward: 250,
-      // Progress directly tied to savings goal
-      progress: hasReal ? Math.max(0, Math.min(500, Math.round(savedAmount))): 0,
-      total: 500,
-      difficulty: 'hard',
-      timeLeft: getTimeLeft(monthlyQuestEnd),
-      completed: false
-    }
-  ]);
+  const [quests, setQuests] = useState<Quest[]>(calculateQuests());
 
   const completeQuest = (questId: number) => {
     const quest = quests.find(q => q.id === questId);
-    if (!quest || quest.completed || quest.progress < quest.total) return;
+    // ✅ Can only claim if: not completed AND time period ended AND progress threshold met
+    if (!quest || quest.completed || !quest.canClaim) return;
 
     const newXp = xp + quest.xpReward;
     const newCoins = coins + quest.coinReward;
     setXp(newXp);
     setCoins(newCoins);
     setQuests(quests.map(q =>
-      q.id === questId ? { ...q, completed: true } : q
+      q.id === questId ? { ...q, completed: true, canClaim: false } : q
     ));
     // App.tsx debounce will persist to DB automatically via the useEffect
   };
@@ -196,43 +230,46 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
       </div>
 
       {/* Daily Quest Highlight */}
-      
-      <div className="bg-gradient-to-r from-[#ffd93d] to-[#ff6b9d] p-6 pixel-borders border-4 border-[#ff5a8d]">
-        <div className="flex items-center gap-3 mb-3">
-          <Flame className="w-6 h-6 text-white pixel-glow" />
-          <h3 className="text-[#1a0f2e] pixel-font text-sm">DAILY QUEST</h3>
-        </div>
-        <div className="bg-white/20 p-4 pixel-borders">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h4 className="text-white pixel-font text-sm mb-1">Daily Saver</h4>
-              <p className="text-white text-sm opacity-90">Save $20 today</p>
-            </div>
-            <Clock className="w-5 h-5 text-white" />
+      {quests[0] && (
+        <div className="bg-gradient-to-r from-[#ffd93d] to-[#ff6b9d] p-6 pixel-borders border-4 border-[#ff5a8d]">
+          <div className="flex items-center gap-3 mb-3">
+            <Flame className="w-6 h-6 text-white pixel-glow" />
+            <h3 className="text-[#1a0f2e] pixel-font text-sm">DAILY QUEST</h3>
           </div>
-          <div className="h-6 bg-[#1a0f2e] pixel-borders mb-3 overflow-hidden">
-            <div 
-              className="h-full bg-white transition-all duration-500 flex items-center justify-center"
-              style={{ width: '75%' }}
-            >
-              <span className="text-[#1a0f2e] pixel-font text-xs">$15 / $20</span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex gap-4">
-              <div className="flex items-center gap-1">
-                <Zap className="w-4 h-4 text-white" />
-                <span className="text-white pixel-font text-xs">+50 XP</span>
+          <div className="bg-white/20 p-4 pixel-borders">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h4 className="text-white pixel-font text-sm mb-1">{quests[0].title}</h4>
+                <p className="text-white text-sm opacity-90">{quests[0].description}</p>
               </div>
-              <div className="flex items-center gap-1">
-                <Coins className="w-4 h-4 text-white" />
-                <span className="text-white pixel-font text-xs">+25</span>
+              <Clock className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-6 bg-[#1a0f2e] pixel-borders mb-3 overflow-hidden">
+              <div 
+                className="h-full bg-white transition-all duration-500 flex items-center justify-center"
+                style={{ width: `${Math.min((quests[0].progress / quests[0].total) * 100, 100)}%` }}
+              >
+                {(quests[0].progress / quests[0].total) * 100 > 15 && (
+                  <span className="text-[#1a0f2e] pixel-font text-xs">${quests[0].progress.toFixed(0)} / ${quests[0].total}</span>
+                )}
               </div>
             </div>
-            <span className="text-white text-xs">6h left</span>
+            <div className="flex items-center justify-between">
+              <div className="flex gap-4">
+                <div className="flex items-center gap-1">
+                  <Zap className="w-4 h-4 text-white" />
+                  <span className="text-white pixel-font text-xs">+{quests[0].xpReward} XP</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Coins className="w-4 h-4 text-white" />
+                  <span className="text-white pixel-font text-xs">+{quests[0].coinReward}</span>
+                </div>
+              </div>
+              <span className="text-white text-xs">{quests[0].timeLeft}</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Quest Categories */}
       <div className="grid grid-cols-1 gap-6">
@@ -243,7 +280,7 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
             ACTIVE QUESTS
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {quests.filter(q => !q.completed).map((quest) => {
+            {quests.filter(q => !q.completed && !q.failed).map((quest) => {
               const progress = (quest.progress / quest.total) * 100;
               const canClaim = quest.progress >= quest.total;
               const colors = difficultyColors[quest.difficulty];
@@ -299,7 +336,7 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
                         <span className="text-[#ffd93d] pixel-font text-xs">+{quest.coinReward}</span>
                       </div>
                     </div>
-                    {canClaim && (
+                    {quest.canClaim && !quest.completed && (
                       <button
                         onClick={() => completeQuest(quest.id)}
                         className="bg-[#4ecdc4] text-white px-4 py-2 pixel-borders hover:bg-[#3db8af] pixel-font text-xs"
@@ -307,12 +344,56 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
                         CLAIM
                       </button>
                     )}
+                    {!quest.canClaim && !quest.completed && quest.progress < quest.total && (
+                      <div className="text-[#c7b8ea] text-xs">
+                        {Math.round((quest.progress / quest.total) * 100)}% done
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
+
+        {/* Failed Quests */}
+        {quests.some(q => q.failed) && (
+          <div>
+            <h3 className="text-[#ff6b9d] pixel-font text-sm mb-4 flex items-center gap-2">
+              <span className="text-lg">❌</span>
+              FAILED QUESTS
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {quests.filter(q => q.failed).map((quest) => (
+                <div 
+                  key={quest.id} 
+                  className="bg-[#2d1b4e] p-5 pixel-borders border-4 border-[#ff6b9d] opacity-90"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">❌</span>
+                    <h4 className="text-white pixel-font text-sm">{quest.title}</h4>
+                  </div>
+                  <p className="text-[#ff6b9d] text-sm mb-3">{quest.description}</p>
+                  <div className="bg-[#3d2661]/50 p-2 pixel-borders mb-3">
+                    <p className="text-[#ff6b9d] text-xs">
+                      {quest.id === 2 ? '💸 You went over budget this month!' : 'Quest failed - Better luck next time!'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <Zap className="w-4 h-4 text-[#c7b8ea]" />
+                      <span className="text-[#c7b8ea] pixel-font text-xs line-through">+{quest.xpReward} XP</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Coins className="w-4 h-4 text-[#c7b8ea]" />
+                      <span className="text-[#c7b8ea] pixel-font text-xs line-through">+{quest.coinReward}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Completed Quests */}
         {quests.some(q => q.completed) && (
