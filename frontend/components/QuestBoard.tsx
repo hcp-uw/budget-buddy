@@ -157,6 +157,20 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
         canClaim: isTimePeriodComplete(dailyQuestEnd) && (hasReal ? savedToday >= 20 : false),
       },
       {
+        id: 4,
+        title: 'Finance Quiz',
+        description: 'Complete today’s finance quiz',
+        xpReward: 50,
+        coinReward: 30,
+        progress: 0,
+        total: 1,
+        difficulty: 'medium',
+        timeLeft: getTimeLeft(dailyQuestEnd),
+        completed: false,
+        failed: false,
+        canClaim: false,
+      },
+      {
         id: 2,
         title: 'Budget Master',
         description: 'Stay under your monthly budget',
@@ -189,7 +203,35 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
     return baseQuests;
   };
 
-  const [quests, setQuests] = useState<Quest[]>(calculateQuests());
+  const [quests, setQuests] = useState<Quest[]>(() => {
+    const q = calculateQuests();
+    const isQuizDone = localStorage.getItem(`quizCompleted_${new Date().toDateString()}`) === 'true';
+    return q.map(quest => quest.id === 4 ? { ...quest, completed: isQuizDone, progress: isQuizDone ? 1 : 0 } : quest);
+  });
+  
+  const [showQuiz, setShowQuiz] = useState(false);
+
+  const quizPool = [
+    { question: "What is a budget?", options: ["A spending plan", "A type of loan", "A credit score", "A bank account"], answer: 0 },
+    { question: "What does APR stand for?", options: ["Annual Percentage Rate", "Applied Payment Ratio", "Average Prime Rate", "Authorized Payment Record"], answer: 0 },
+    { question: "What is an emergency fund?", options: ["Money saved for unexpected expenses", "A government assistance program", "A type of investment", "A credit card limit"], answer: 0 },
+    { question: "Which is a 'need' vs a 'want'?", options: ["Rent/housing", "Streaming services", "Vacation", "New clothes"], answer: 0 },
+    { question: "What is compound interest?", options: ["Interest earned on principal and accumulated interest", "A fixed monthly fee", "Interest only on original amount", "A penalty for late payments"], answer: 0 },
+    { question: "The 50/30/20 rule puts 20% toward what?", options: ["Savings and debt repayment", "Wants", "Needs", "Entertainment"], answer: 0 },
+    { question: "What is a credit score used for?", options: ["To evaluate creditworthiness", "To track savings", "To measure income", "To calculate taxes"], answer: 0 },
+    { question: "What does 'pay yourself first' mean?", options: ["Save before spending on anything else", "Pay your highest bill first", "Spend on fun before bills", "Pay off debt before saving"], answer: 0 },
+    { question: "Which account typically earns more interest?", options: ["High-yield savings account", "Standard checking account", "Prepaid debit card", "Cash under the mattress"], answer: 0 },
+    { question: "What is a W-4 form for?", options: ["Tell employer how much tax to withhold", "File annual taxes", "Apply for a loan", "Open a bank account"], answer: 0 },
+  ];
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  const dailyQuiz = quizPool[dayOfYear % quizPool.length];
+
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  
+  const todayKey = `quizCompleted_${new Date().toDateString()}`;
+  const [quizCompleted, setQuizCompleted] = useState(() => {
+    return localStorage.getItem(todayKey) === 'true';
+  });
 
   const completeQuest = (questId: number) => {
     const quest = quests.find(q => q.id === questId);
@@ -336,6 +378,14 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
                         <span className="text-[#ffd93d] pixel-font text-xs">+{quest.coinReward}</span>
                       </div>
                     </div>
+                    {quest.id === 4 && !quizCompleted && (
+                      <button
+                        onClick={() => setShowQuiz(true)}
+                        className="bg-[#a78bfa] text-white px-4 py-2 pixel-borders hover:bg-[#9677f7] pixel-font text-xs"
+                      >
+                        START QUIZ
+                      </button>
+                    )}
                     {quest.canClaim && !quest.completed && (
                       <button
                         onClick={() => completeQuest(quest.id)}
@@ -429,6 +479,73 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
           </div>
         )}
       </div>
+            {showQuiz && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#2d1b4e] p-6 pixel-borders border-4 border-[#6b4e91] w-[500px]">
+
+            <h3 className="text-white pixel-font text-sm mb-4">
+              DAILY FINANCE QUIZ
+            </h3>
+
+            <p className="text-white mb-4">
+              {dailyQuiz.question}
+            </p>
+
+            <div className="space-y-3 mb-6">
+              {dailyQuiz.options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedAnswer(index)}
+                  className={`w-full p-3 text-left pixel-borders text-white ${
+                    selectedAnswer === index
+                      ? 'bg-[#4ecdc4]'
+                      : 'bg-[#3d2661]'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  if (selectedAnswer === dailyQuiz.answer) {
+
+                    setXp(xp + 50);
+                    setCoins(coins + 30);
+
+                    setQuizCompleted(true);
+                    localStorage.setItem(todayKey, 'true');
+
+                    setQuests(
+                      quests.map(q =>
+                        q.id === 4
+                          ? { ...q, completed: true }
+                          : q
+                      )
+                    );
+                  }
+
+                  setShowQuiz(false);
+                }}
+                className="flex-1 bg-[#ff6b9d] text-white pixel-font text-xs py-2 pixel-borders"
+              >
+                SUBMIT
+              </button>
+
+              <button
+                onClick={() => setShowQuiz(false)}
+                className="flex-1 bg-[#3d2661] text-white pixel-font text-xs py-2 pixel-borders"
+              >
+                CANCEL
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

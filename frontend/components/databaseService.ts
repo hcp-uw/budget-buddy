@@ -79,6 +79,69 @@ export async function saveGameState(userId: string, xp: number, coins: number): 
   }
 }
 
+// Save/update quiz streak
+export async function updateQuizStreak(userId: string): Promise<number> {
+  try {
+    const today = new Date().toISOString();
+
+    const { data } = await supabase
+      .from('learning_streaks')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    // First time user
+    if (!data) {
+      await supabase.from('learning_streaks').insert([{
+        user_id: userId,
+        streak_count: 1,
+        last_completed: today
+      }]);
+
+      return 1;
+    }
+
+    const lastCompleted = new Date(data.last_completed);
+    const now = new Date();
+
+    const daysDiff = Math.floor(
+      (now.getTime() - lastCompleted.getTime()) /
+      (1000 * 60 * 60 * 24)
+    );
+
+    let newStreak = data.streak_count;
+
+    // Same day
+    if (daysDiff === 0) {
+      newStreak = data.streak_count;
+    }
+
+    // Consecutive day
+    else if (daysDiff === 1) {
+      newStreak = data.streak_count + 1;
+    }
+
+    // Missed a day
+    else {
+      newStreak = 1;
+    }
+
+    await supabase
+      .from('learning_streaks')
+      .update({
+        streak_count: newStreak,
+        last_completed: today
+      })
+      .eq('user_id', userId);
+
+    return newStreak;
+
+  } catch (err) {
+    console.error('Error updating quiz streak:', err);
+    return 1;
+  }
+}
+
 export function calculateMonthlySpent(transactions: any[]): number {
   const now = new Date();
   const currentMonth = now.getMonth();

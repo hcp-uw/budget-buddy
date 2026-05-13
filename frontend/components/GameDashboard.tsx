@@ -159,6 +159,23 @@ export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialB
         <p className="text-white text-sm opacity-90">Keep saving to level up!</p>
       </div>
 
+      {/* Daily Quiz Streak */}
+      <div className="bg-[#2d1b4e] p-4 pixel-borders border-4 border-[#6b4e91]">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-[#ffd93d] pixel-font text-sm mb-1">
+               DAILY QUIZ STREAK
+            </h3>
+
+            <p className="text-white pixel-font text-2xl">
+              {streak} DAYS
+            </p>
+          </div>
+
+
+        </div>
+      </div>
+
       {/* Character & Level */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Character Card */}

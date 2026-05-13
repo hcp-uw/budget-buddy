@@ -596,3 +596,70 @@ app.listen(PORT, () => {
   console.log('📱 Plaid Environment:', process.env.PLAID_ENV || 'sandbox');
   console.log('🗄️  Supabase URL:', supabaseUrl ? '✅ configured' : '❌ NOT configured');
 });
+
+// ================= DAILY QUIZ ROUTE =================
+
+app.get('/api/daily-quiz', async (req, res) => {
+  try {
+    const question = getTodaysQuestion();
+
+    res.json({
+      question: question.question,
+      options: question.options
+    });
+
+  } catch (err) {
+    console.error('Quiz error:', err);
+    res.status(500).json({ error: 'Failed to load quiz' });
+  }
+});
+
+// daily questions
+const dailyQuestions = [
+  {
+    question: "What is a budget?",
+    options: [
+      "A spending plan",
+      "A type of loan",
+      "A credit score",
+      "A bank account"
+    ],
+    answer: 0
+  },
+  {
+    question: "What is an emergency fund for?",
+    options: [
+      "Vacation",
+      "Unexpected expenses",
+      "Shopping",
+      "Investing"
+    ],
+    answer: 1
+  },
+  {
+    question: "Which is considered a NEED?",
+    options: [
+      "Designer shoes",
+      "Rent",
+      "Video games",
+      "Concert tickets"
+    ],
+    answer: 1
+  }
+];
+
+function getTodayDate() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function getDailyQuestion() {
+  const today = getTodayDate();
+
+  let hash = 0;
+
+  for (let i = 0; i < today.length; i++) {
+    hash = (hash * 31 + today.charCodeAt(i)) % dailyQuestions.length;
+  }
+
+  return dailyQuestions[hash];
+}
