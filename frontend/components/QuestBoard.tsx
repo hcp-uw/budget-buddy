@@ -8,6 +8,9 @@ import {
   Flame
 } from 'lucide-react';
 
+import { updateQuizStreak } from './databaseService';
+
+
 interface Quest {
   id: number;
   title: string;
@@ -208,7 +211,6 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
     const isQuizDone = localStorage.getItem(`quizCompleted_${new Date().toDateString()}`) === 'true';
     return q.map(quest => quest.id === 4 ? { ...quest, completed: isQuizDone, progress: isQuizDone ? 1 : 0 } : quest);
   });
-  
   const [showQuiz, setShowQuiz] = useState(false);
 
   const quizPool = [
@@ -517,6 +519,8 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
 
                     setQuizCompleted(true);
                     localStorage.setItem(todayKey, 'true');
+                    if (userId) updateQuizStreak(userId);
+
 
                     setQuests(
                       quests.map(q =>
