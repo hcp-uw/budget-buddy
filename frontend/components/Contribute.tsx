@@ -70,6 +70,17 @@ export const Contribute = ({ groupId, userId, onClose, onSuccess, monthlyBudget 
 
         if (updateError) throw updateError;
 
+        await supabase.from('transactions').insert([{
+        user_id: userId,
+        plaid_transaction_id: `circle_withdraw_${Date.now()}`,
+        plaid_item_id: `circle_${groupId}`,
+        amount: -numAmount,
+        merchant_name: `Circle Withdrawal`,
+        date: new Date().toISOString().split('T')[0],
+        category: 'circle',
+        pending: false,
+        }]);
+
         alert(`✅ Withdrew $${numAmount} from circle!`);
         setAmount('');
         onSuccess();
@@ -113,6 +124,16 @@ export const Contribute = ({ groupId, userId, onClose, onSuccess, monthlyBudget 
           .eq('user_id', userId);
 
         if (updateError) throw updateError;
+        await supabase.from('transactions').insert([{
+        user_id: userId,
+        plaid_transaction_id: `circle_add_${Date.now()}`,
+        plaid_item_id: `circle_${groupId}`,
+        amount: numAmount,
+        merchant_name: `Circle Contribution`,
+        date: new Date().toISOString().split('T')[0],
+        category: 'circle',
+        pending: false,
+        }]);
 
         // 4️⃣ Store contribution as a virtual transaction for budget tracking
         const { error: logError } = await supabase
