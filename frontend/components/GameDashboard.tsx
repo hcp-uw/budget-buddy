@@ -58,7 +58,11 @@ function isDateInRange(dateStr: string | undefined, start: Date, end: Date): boo
 
 // Map Plaid categories to icons + colors
 function getCategoryIcon(tx: Transaction) {
-  const cat = (tx.personal_finance_category?.primary || tx.category?.[0] || '').toLowerCase();
+  const cat = (
+    tx.personal_finance_category?.primary ||
+    (Array.isArray(tx.category) ? tx.category[0] : tx.category) ||
+    ''
+  ).toLowerCase();
   if (cat.includes('food') || cat.includes('restaurant') || cat.includes('dining'))
     return { icon: Utensils, color: '#ff6b9d' };
   if (cat.includes('shop') || cat.includes('merchan'))
@@ -136,7 +140,7 @@ export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialB
     : 0;
 
   // ✨ TOTAL SPENDING = Bank Transactions + Circle Contributions
-  const spent = transactionSpending + circleContributions;
+  const spent = transactionSpending;
 
   const remaining = budget - spent;
   const spentPercent = Math.min((spent / budget) * 100, 100);
@@ -328,7 +332,7 @@ export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialB
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-sm truncate">{tx.merchant_name || tx.name || 'Unknown'}</div>
-                    <div className="text-[#c7b8ea] text-xs">{tx.category?.[0] || tx.personal_finance_category?.primary || 'Other'}</div>
+                    <div className="text-[#c7b8ea] text-xs">{Array.isArray(tx.category) ? tx.category[0] : tx.category || tx.personal_finance_category?.primary || 'Other'}</div>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div className={`pixel-font text-sm ${isNegative ? 'text-[#4ecdc4]' : 'text-[#ff6b9d]'}`}>

@@ -74,7 +74,9 @@ export default function App() {
 
   const handleLoginSuccess = (budget: number, transactions: any[], userName: string, uid: string) => {
     setMonthlyBudget(budget);
-    setUserTransactions(transactions);
+    setUserTransactions([...transactions].sort(
+      (a: any, b: any) => new Date(b.date ?? '').getTime() - new Date(a.date ?? '').getTime()
+    ));
     setUsername(userName);
     setUserId(uid);
     localStorage.setItem(SESSION_KEY, JSON.stringify({ userId: uid, username: userName, monthlyBudget: budget }));
@@ -117,7 +119,9 @@ export default function App() {
 
   const handlePlaidConnected = (transactions: any[]) => {
     console.log('✅ Plaid connected! Transactions:', transactions.length);
-    setUserTransactions(transactions);
+    setUserTransactions([...transactions].sort(
+    (a: any, b: any) => new Date(b.date ?? '').getTime() - new Date(a.date ?? '').getTime()
+    ));
     setCurrentView('dashboard');
   };
 
@@ -145,7 +149,9 @@ export default function App() {
       const txRes = await fetch(`/api/existing-transactions?user_id=${userId}`);
       if (!txRes.ok) throw new Error("Failed to fetch transactions");
       const txData = await txRes.json();
-      const transactions = txData.transactions || [];
+      const transactions = (txData.transactions || []).sort(
+      (a: any, b: any) => new Date(b.date ?? '').getTime() - new Date(a.date ?? '').getTime()
+      );
       setUserTransactions(transactions);
       // Trigger dashboard to re-fetch circle contributions
       setContributionRefreshTrigger(prev => prev + 1);

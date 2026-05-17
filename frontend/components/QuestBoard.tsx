@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Star,
   Coins,
@@ -151,13 +151,13 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
         description: 'Keep spending under $20 today',
         xpReward: 25,
         coinReward: 25,
-        progress: hasReal ? Math.max(0, Math.min(20, Math.round(savedToday))) : 0,
+        progress: hasReal ? Math.max(0, Math.min(20, Math.round(spentToday))) : 0,
         total: 20,
         difficulty: 'easy',
         timeLeft: getTimeLeft(dailyQuestEnd),
         completed: false,
-        failed: false,
-        canClaim: isTimePeriodComplete(dailyQuestEnd) && (hasReal ? savedToday >= 20 : false),
+        failed: hasReal && spentToday > 20,
+        canClaim: isTimePeriodComplete(dailyQuestEnd) && (hasReal ? spentToday <= 20 : false),
       },
       {
         id: 4,
@@ -180,12 +180,12 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
         xpReward: 100,
         coinReward: 100,
         // Only claimable when month ends while under budget
-        progress: hasReal ? Math.min(100, Math.round((remaining / budget) * 100)) : 0,
+        progress: hasReal ? Math.min(100, Math.round(((budget - totalSpent) / budget) * 100)) : 0,
         total: 100,
         difficulty: 'hard',
         timeLeft: getTimeLeft(monthlyQuestEnd),
         completed: false,
-        failed: isTimePeriodComplete(monthlyQuestEnd) && remaining < 0, // ✅ FAILS if over budget at month end
+        failed: remaining < 0, // ✅ FAILS if over budget at month end
         canClaim: isTimePeriodComplete(monthlyQuestEnd) && remaining >= 0,
       },
       {
@@ -194,23 +194,30 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
         description: 'Save $500 this month',
         xpReward: 500,
         coinReward: 250,
-        progress: hasReal ? Math.max(0, Math.min(500, Math.round(savedAmount))) : 0,
+        progress: hasReal ? Math.min(500, Math.round(totalSpent)) : 0,
         total: 500,
         difficulty: 'hard',
         timeLeft: getTimeLeft(monthlyQuestEnd),
         completed: false,
-        failed: false,
-        canClaim: isTimePeriodComplete(monthlyQuestEnd) && savedAmount >= 500,
+        failed: totalSpent > budget,
+        canClaim: isTimePeriodComplete(monthlyQuestEnd) && (budget - totalSpent) >= 500,
       },
     ];
     return baseQuests;
   };
 
-  const [quests, setQuests] = useState<Quest[]>(() => {
-    const q = calculateQuests();
+  const isQuizDone = localStorage.getItem(`quizCompleted_${new Date().toDateString()}`) === 'true';
+  const freshQuests = calculateQuests().map(quest => 
+    quest.id === 4 ? { ...quest, completed: isQuizDone, progress: isQuizDone ? 1 : 0 } : quest
+  );
+  const [quests, setQuests] = useState<Quest[]>(freshQuests);
+
+  useEffect(() => {
     const isQuizDone = localStorage.getItem(`quizCompleted_${new Date().toDateString()}`) === 'true';
-    return q.map(quest => quest.id === 4 ? { ...quest, completed: isQuizDone, progress: isQuizDone ? 1 : 0 } : quest);
-  });
+    setQuests(calculateQuests().map(quest =>
+      quest.id === 4 ? { ...quest, completed: isQuizDone, progress: isQuizDone ? 1 : 0 } : quest
+    ));
+  }, [transactions, budget]);
   const [showQuiz, setShowQuiz] = useState(false);
 
   const quizPool = [
@@ -428,7 +435,7 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
                   <p className="text-[#ff6b9d] text-sm mb-3">{quest.description}</p>
                   <div className="bg-[#3d2661]/50 p-2 pixel-borders mb-3">
                     <p className="text-[#ff6b9d] text-xs">
-                      {quest.id === 2 ? '💸 You went over budget this month!' : 'Quest failed - Better luck next time!'}
+                      {quest.id === 2 ? '💸 You went over budget this month!' : quest.id === 1 ? '💸 You spent over $20 today!' : quest.id === 3 ? '💸 You went over budget this month!' : 'Quest failed - Better luck next time!'}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
