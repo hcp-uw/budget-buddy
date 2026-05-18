@@ -206,18 +206,23 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
     return baseQuests;
   };
 
-  const isQuizDone = localStorage.getItem(`quizCompleted_${new Date().toDateString()}`) === 'true';
-  const freshQuests = calculateQuests().map(quest => 
-    quest.id === 4 ? { ...quest, completed: isQuizDone, progress: isQuizDone ? 1 : 0 } : quest
-  );
-  const [quests, setQuests] = useState<Quest[]>(freshQuests);
+const [quests, setQuests] = useState<Quest[]>([]);
 
-  useEffect(() => {
-    const isQuizDone = localStorage.getItem(`quizCompleted_${new Date().toDateString()}`) === 'true';
-    setQuests(calculateQuests().map(quest =>
+useEffect(() => {
+  const isQuizDone = localStorage.getItem(`quizCompleted_${new Date().toDateString()}`) === 'true';
+  setQuests(prev => {
+    const fresh = calculateQuests().map(quest =>
       quest.id === 4 ? { ...quest, completed: isQuizDone, progress: isQuizDone ? 1 : 0 } : quest
-    ));
-  }, [transactions, budget]);
+    );
+    // Preserve completed state for non-quiz quests that were manually claimed
+    return fresh.map(freshQuest => {
+      const existing = prev.find(p => p.id === freshQuest.id);
+      if (freshQuest.id === 4) return freshQuest; // quiz always from localStorage
+      if (existing?.completed) return { ...freshQuest, completed: true, canClaim: false }; // keep claimed
+      return freshQuest; // use fresh calculated state
+    });
+  });
+}, [transactions, budget]);
   const [showQuiz, setShowQuiz] = useState(false);
 
   const quizPool = [
