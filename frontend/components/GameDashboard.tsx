@@ -58,11 +58,7 @@ function isDateInRange(dateStr: string | undefined, start: Date, end: Date): boo
 
 // Map Plaid categories to icons + colors
 function getCategoryIcon(tx: Transaction) {
-  const cat = (
-    tx.personal_finance_category?.primary ||
-    (Array.isArray(tx.category) ? tx.category[0] : tx.category) ||
-    ''
-  ).toLowerCase();
+  const cat = (tx.personal_finance_category?.primary || tx.category?.[0] || '').toLowerCase();
   if (cat.includes('food') || cat.includes('restaurant') || cat.includes('dining'))
     return { icon: Utensils, color: '#ff6b9d' };
   if (cat.includes('shop') || cat.includes('merchan'))
@@ -139,7 +135,8 @@ export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialB
       }, 0)
     : 0;
 
-  // ✨ TOTAL SPENDING = Bank Transactions + Circle Contributions
+  // ✨ TOTAL SPENDING = transactionSpending (which now includes circle transactions with merchant_name = 'Circle Contribution')
+  // No need to add circleContributions separately since they're already in transactions
   const spent = transactionSpending;
 
   const remaining = budget - spent;
@@ -161,23 +158,6 @@ export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialB
       <div className="bg-gradient-to-r from-[#ff6b9d] via-[#a78bfa] to-[#4ecdc4] p-6 pixel-borders">
         <h2 className="text-white pixel-font text-lg mb-2">BUDGET QUEST</h2>
         <p className="text-white text-sm opacity-90">Keep saving to level up!</p>
-      </div>
-
-      {/* Daily Quiz Streak */}
-      <div className="bg-[#2d1b4e] p-4 pixel-borders border-4 border-[#6b4e91]">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-[#ffd93d] pixel-font text-sm mb-1">
-               DAILY QUIZ STREAK
-            </h3>
-
-            <p className="text-white pixel-font text-2xl">
-              {streak} DAYS
-            </p>
-          </div>
-
-
-        </div>
       </div>
 
       {/* Character & Level */}
@@ -332,7 +312,7 @@ export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialB
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-sm truncate">{tx.merchant_name || tx.name || 'Unknown'}</div>
-                    <div className="text-[#c7b8ea] text-xs">{Array.isArray(tx.category) ? tx.category[0] : tx.category || tx.personal_finance_category?.primary || 'Other'}</div>
+                    <div className="text-[#c7b8ea] text-xs">{tx.category || tx.personal_finance_category?.primary || 'Other'}</div>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div className={`pixel-font text-sm ${isNegative ? 'text-[#4ecdc4]' : 'text-[#ff6b9d]'}`}>

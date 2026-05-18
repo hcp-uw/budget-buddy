@@ -55,13 +55,14 @@ export const Contribute = ({ groupId, userId, onClose, onSuccess, monthlyBudget 
       const currentBalance = userData?.contribution || 0;
 
       if (mode === 'withdraw') {
-        // WITHDRAW MODE: Simply reduce contribution
+        // WITHDRAW MODE: Reduce contribution and delete corresponding transaction
         if (currentBalance < numAmount) {
           return alert(`You only have $${currentBalance} in this circle!`);
         }
 
         const newBalance = currentBalance - numAmount;
 
+        // 1️⃣ Update circle contribution balance
         const { error: updateError } = await supabase
           .from('leaderboard_groups')
           .update({ contribution: newBalance })
@@ -70,23 +71,36 @@ export const Contribute = ({ groupId, userId, onClose, onSuccess, monthlyBudget 
 
         if (updateError) throw updateError;
 
-        await supabase.from('transactions').insert([{
-          user_id: userId,
-          plaid_transaction_id: `circle_withdraw_${Date.now()}`,
-          plaid_item_id: `circle_${groupId}`,
-          amount: -numAmount,
-          merchant_name: `Circle Withdrawal`,
-          date: new Date().toISOString(),
-          category: 'circle',
-          pending: false,
-        }]);
+        // 2️⃣ Delete the corresponding circle transaction via backend
+        try {
+          const deleteResponse = await fetch('/api/delete-circle-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: userId,
+              group_id: groupId,
+              amount: numAmount
+            })
+          });
+
+          if (!deleteResponse.ok) {
+            const errorData = await deleteResponse.json();
+            console.warn('⚠️ Warning: Failed to delete circle transaction:', errorData.error);
+            // Don't fail the withdrawal if transaction deletion fails
+          } else {
+            console.log('✅ Circle transaction deleted successfully');
+          }
+        } catch (err) {
+          console.warn('⚠️ Warning: Error calling delete transaction endpoint:', err);
+          // Don't fail the withdrawal if transaction deletion fails
+        }
 
         alert(`✅ Withdrew $${numAmount} from circle!`);
         setAmount('');
         onSuccess();
         onClose();
       } else {
-        // ADD MODE: Deduct from budget and check quests
+        // ADD MODE: Deduct from budget, check quests, and CREATE TRANSACTION
         
         // 1️⃣ Fetch current month's transactions to calculate spending
         const { data: transactions, error: txError } = await supabase
@@ -99,7 +113,7 @@ export const Contribute = ({ groupId, userId, onClose, onSuccess, monthlyBudget 
         const monthStart = getMonthStart();
         const monthEnd = getMonthEnd();
         
-        // Filter to THIS MONTH transactions only
+        // Filter to THIS MONTH transactions only (excluding this new circle transaction)
         const monthTransactions = (transactions || []).filter(t => 
           isDateInRange(t.date, monthStart, monthEnd)
         );
@@ -124,18 +138,28 @@ export const Contribute = ({ groupId, userId, onClose, onSuccess, monthlyBudget 
           .eq('user_id', userId);
 
         if (updateError) throw updateError;
-        await supabase.from('transactions').insert([{
-          user_id: userId,
-          plaid_transaction_id: `circle_add_${Date.now()}`,
-          plaid_item_id: `circle_${groupId}`,
-          amount: numAmount,
-          merchant_name: `Circle Contribution`,
-          date: new Date().toISOString().split('T')[0],
-          category: 'circle',
-          pending: false,
-        }]);
 
-        // 4️⃣ Store contribution as a virtual transaction for budget tracking
+        // 4️⃣ CREATE TRANSACTION for the circle addition
+        // This treats the circle contribution as a real transaction in the user's ledger
+        const { error: txInsertError } = await supabase
+          .from('transactions')
+          .insert([{
+            user_id: userId,
+            amount: numAmount,
+            date: new Date().toISOString().split('T')[0],
+            merchant_name: 'Circle Contribution',
+            category: 'Savings & Investments',
+            pending: false,
+            // Note: We'll store group_id in circle_contributions table instead
+            // since it's not in the transactions schema
+          }]);
+
+        if (txInsertError) {
+          console.error('❌ Error creating circle transaction:', txInsertError);
+          throw new Error('Failed to record circle contribution as transaction: ' + txInsertError.message);
+        }
+
+        // 5️⃣ Store contribution log
         const { error: logError } = await supabase
           .from('circle_contributions')
           .insert([{
@@ -148,10 +172,10 @@ export const Contribute = ({ groupId, userId, onClose, onSuccess, monthlyBudget 
 
         if (logError && logError.code !== 'PGRST116') {
           // Only warn if it's not a "table doesn't exist" error
-          console.warn('Contribution log warning:', logError);
+          console.warn('⚠️ Contribution log warning:', logError);
         }
 
-        // 5️⃣ Mark Budget Master quest as failed if over budget
+        // 6️⃣ Mark Budget Master quest as failed if over budget
         if (violatesBudget) {
           // Store quest failure status (you can create a quest_status table later)
           console.log('⚠️ Budget Master quest violated! Would be marked as failed.');
