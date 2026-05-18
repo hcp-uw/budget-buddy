@@ -151,7 +151,7 @@ export function QuestBoard({ coins, setCoins, xp, setXp, userId, transactions = 
         description: 'Keep spending under $20 today',
         xpReward: 25,
         coinReward: 25,
-        progress: hasReal ? Math.max(0, Math.min(20, Math.round(spentToday))) : 0,
+        progress: hasReal ? Math.max(0, Math.min(20, Math.round(20 - spentToday))) : 20,
         total: 20,
         difficulty: 'easy',
         timeLeft: getTimeLeft(dailyQuestEnd),
@@ -373,9 +373,9 @@ useEffect(() => {
                       style={{ width: `${Math.min(progress, 100)}%` }}
                     >
                       {progress > 15 && (
-                        <span className="text-white pixel-font text-xs">
-                          {quest.progress}/{quest.total}
-                        </span>
+                      <span className="text-white pixel-font text-xs">
+                        {quest.id === 1 ? `$${quest.progress} left` : `${quest.progress}/${quest.total}`}
+                      </span>
                       )}
                     </div>
                   </div>
