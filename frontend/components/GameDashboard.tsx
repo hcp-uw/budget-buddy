@@ -135,8 +135,9 @@ export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialB
       }, 0)
     : 0;
 
-  // ✨ TOTAL SPENDING = Bank Transactions + Circle Contributions
-  const spent = transactionSpending + circleContributions;
+  // ✨ TOTAL SPENDING = transactionSpending (which now includes circle transactions with merchant_name = 'Circle Contribution')
+  // No need to add circleContributions separately since they're already in transactions
+  const spent = transactionSpending;
 
   const remaining = budget - spent;
   const spentPercent = Math.min((spent / budget) * 100, 100);
@@ -311,7 +312,7 @@ export function GameDashboard({ coins, setCoins, xp, setXp, streak = 1, initialB
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-sm truncate">{tx.merchant_name || tx.name || 'Unknown'}</div>
-                    <div className="text-[#c7b8ea] text-xs">{tx.category?.[0] || tx.personal_finance_category?.primary || 'Other'}</div>
+                    <div className="text-[#c7b8ea] text-xs">{tx.category || tx.personal_finance_category?.primary || 'Other'}</div>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div className={`pixel-font text-sm ${isNegative ? 'text-[#4ecdc4]' : 'text-[#ff6b9d]'}`}>

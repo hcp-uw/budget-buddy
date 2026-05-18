@@ -561,6 +561,69 @@ app.put('/api/update-budget', async (req, res) => {
   }
 });
 
+// ✅ DELETE CIRCLE TRANSACTION - Remove transaction when user withdraws from circle
+app.post('/api/delete-circle-transaction', async (req, res) => {
+  try {
+    const { user_id, group_id, amount } = req.body;
+
+    if (!user_id || !group_id || !amount) {
+      return res.status(400).json({ error: 'user_id, group_id, and amount are required' });
+    }
+
+    console.log(`🗑️  Deleting circle transaction: user=${user_id}, group=${group_id}, amount=$${amount}`);
+
+    // Find the most recent circle transaction (merchant_name = 'Circle Contribution')
+    // We'll find it by user_id, amount, and merchant name
+    const { data: circleTransactions, error: fetchError } = await supabase
+      .from('transactions')
+      .select('id, amount, date, merchant_name')
+      .eq('user_id', user_id)
+      .eq('merchant_name', 'Circle Contribution')
+      .order('date', { ascending: false })
+      .limit(10);
+
+    if (fetchError) {
+      console.error('❌ Error fetching circle transactions:', fetchError);
+      return res.status(500).json({ error: 'Failed to find circle transactions' });
+    }
+
+    // Try to find exact match first, then closest match
+    let txToDelete = null;
+    
+    if (circleTransactions && circleTransactions.length > 0) {
+      // Look for exact amount match
+      txToDelete = circleTransactions.find(tx => parseFloat(tx.amount) === parseFloat(amount));
+      
+      // If no exact match, use the most recent one
+      if (!txToDelete) {
+        txToDelete = circleTransactions[0];
+      }
+    }
+
+    if (!txToDelete) {
+      console.warn('⚠️ No circle transaction found to delete');
+      return res.status(404).json({ error: 'No matching circle transaction found' });
+    }
+
+    // Delete the transaction
+    const { error: deleteError } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', txToDelete.id);
+
+    if (deleteError) {
+      console.error('❌ Error deleting transaction:', deleteError);
+      return res.status(500).json({ error: 'Failed to delete transaction' });
+    }
+
+    console.log(`✅ Circle transaction deleted: ${txToDelete.id}`);
+    res.json({ success: true, deletedTransactionId: txToDelete.id });
+  } catch (err) {
+    console.error('❌ Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ✅ HEALTH CHECK
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
