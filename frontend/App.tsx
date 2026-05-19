@@ -298,7 +298,7 @@ export default function App() {
 
         {/* Moolah mascot */}
         <div style={{ position: 'fixed', left: '92px', top: '50%', transform: 'translateY(-50%)', zIndex: 45, width: '364px', height: '750px',
-          display: 'flex', justifyContent: 'center', border: '4px solid #6b4e91', backgroundColor: '#2d1b4e', padding: '8px', paddingTop: '100px' }}>
+          display: 'flex', justifyContent: 'center', border: '4px solid #6b4e91', backgroundColor: '#7b5fa8', padding: '8px', paddingTop: '100px' }}>
           <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
             {crownEquipped && (
               <div style={{ position: 'absolute', top: '25px', left: '52%', transform: 'translateX(-50%)', zIndex: 46, fontSize: '80px' }}>

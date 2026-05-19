@@ -64,7 +64,7 @@ const [items, setItems] = useState<ShopItem[]>(() => {
       price: 0, //100
       icon: Palette,
       category: 'cosmetic',
-      color: '#ff6b9d',
+      color: '#22c55e',
       owned: false,
       filter: 'sepia(1) hue-rotate(390deg) saturate(3)'
     },
@@ -111,13 +111,14 @@ const [items, setItems] = useState<ShopItem[]>(() => {
     },
     {
       id: 7,
-      name: 'Hero Cape',
-      description: 'Epic cape for your avatar',
+      name: 'Blue Avatar',
+      description: 'Change your avatar color to blue',
       price: 0, //350
-      icon: Shirt,
+      icon: Palette,
       category: 'cosmetic',
-      color: '#ff6b9d',
-      owned: false
+      color: '#2563eb',
+      owned: false,
+      filter: 'sepia(1) hue-rotate(180deg) saturate(3)'
     },
     {
       id: 8,
@@ -336,10 +337,12 @@ localStorage.setItem(ownedKey, JSON.stringify(updatedItems.filter(i => i.owned).
                     onClick={() => {
                       if (item.name === 'Golden Crown') {
                         setCrownEquipped(prev => !prev);
+                        setUfoEquipped(false);
                       } else if (item.name == 'Sunglasses'){
                         setSunglassesEquipped(prev => !prev);
                       } else if (item.name === 'UFO Hat') {
                         setUfoEquipped(prev => !prev);
+                        setCrownEquipped(false);
                       } else if (item.filter) {
                         setCowFilter(prev => prev === item.filter ? '' : item.filter);
                       }
