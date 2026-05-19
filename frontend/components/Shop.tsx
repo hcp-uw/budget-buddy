@@ -42,7 +42,11 @@ interface ShopProps {
 export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquipped, crownEquipped,
                       setSunglassesEquipped, sunglassesEquipped, setUfoEquipped, ufoEquipped
 }: ShopProps) {
-  const [items, setItems] = useState<ShopItem[]>([
+  const ownedKey = 'ownedShopItems';
+const [items, setItems] = useState<ShopItem[]>(() => {
+  const saved = localStorage.getItem(ownedKey);
+  const ownedIds: number[] = saved ? JSON.parse(saved) : [];
+  return [
     {
       id: 1,
       name: 'XP Boost',
@@ -147,7 +151,8 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquippe
       filter: 'sunglasses'
 },
 
-  ]);
+  ].map(item => ({ ...item, owned: ownedIds.includes(item.id) }));
+});
 
   const purchaseItem = (itemId: number) => {
     const item = items.find(i => i.id === itemId);
@@ -168,9 +173,9 @@ export function Shop({ coins, setCoins, setCowFilter, cowFilter, setCrownEquippe
     }
 
     setCoins(coins - item.price);
-    setItems(items.map(i => 
-      i.id === itemId ? { ...i, owned: true } : i
-    ));
+    const updatedItems = items.map(i => i.id === itemId ? { ...i, owned: true } : i);
+setItems(updatedItems);
+localStorage.setItem(ownedKey, JSON.stringify(updatedItems.filter(i => i.owned).map(i => i.id)));
 
     toast.success('Purchase successful!', {
       description: `You bought ${item.name}!`,
