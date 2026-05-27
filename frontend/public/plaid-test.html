@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Plaid Sandbox Test</title>
+  <script src="https://cdn.plaid.com/link/v3/stable/link-initialize.js"></script>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    button { padding: 10px 20px; margin: 10px 0; }
+    pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Plaid Sandbox Test</h1>
+    
+    <div id="status" style="padding: 10px; margin: 10px 0; border: 2px solid #ccc;"></div>
+    
+    <h2>Test Credentials</h2>
+    <pre>
+Username: user_good
+Password: pass_good
+MFA: 1111
+Phone: (415) 555-0011
+    </pre>
+
+    <h2>Test Options</h2>
+    <button onclick="testHealth()">1. Test Backend Health</button>
+    <button onclick="testLinkToken()">2. Test Link Token Creation</button>
+    <button onclick="testSandbox()">3. Test Sandbox Config</button>
+    
+    <h2>Results</h2>
+    <pre id="results"></pre>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:8000';
+
+    function updateStatus(msg, type = 'info') {
+      const el = document.getElementById('status');
+      el.innerHTML = `<strong style="color: ${type === 'error' ? 'red' : 'green'}">${msg}</strong>`;
+    }
+
+    function updateResults(data) {
+      document.getElementById('results').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function testHealth() {
+      try {
+        updateStatus('Testing backend health...');
+        const res = await fetch(`${API_URL}/api/health`);
+        const data = await res.json();
+        updateStatus('✅ Backend is healthy!', 'success');
+        updateResults(data);
+      } catch (err) {
+        updateStatus(`❌ Backend error: ${err.message}`, 'error');
+        updateResults({ error: err.message });
+      }
+    }
+
+    async function testLinkToken() {
+      try {
+        updateStatus('Creating link token...');
+        const res = await fetch(`${API_URL}/api/create_link_token`, { method: 'POST' });
+        const data = await res.json();
+        
+        if (res.status !== 200) {
+          updateStatus(`❌ Link token error: ${data.error}`, 'error');
+          updateResults(data);
+          return;
+        }
+        
+        updateStatus('✅ Link token created!', 'success');
+        updateResults({ 
+          link_token_created: true,
+          has_token: !!data.link_token,
+          expires_at: data.expiration
+        });
+      } catch (err) {
+        updateStatus(`❌ Error: ${err.message}`, 'error');
+        updateResults({ error: err.message });
+      }
+    }
+
+    async function testSandbox() {
+      try {
+        updateStatus('Testing sandbox config...');
+        const res = await fetch(`${API_URL}/api/sandbox-test`);
+        const data = await res.json();
+        
+        if (res.status !== 200) {
+          updateStatus(`❌ Sandbox config error`, 'error');
+          updateResults(data);
+          return;
+        }
+        
+        updateStatus('✅ Sandbox is configured!', 'success');
+        updateResults(data);
+      } catch (err) {
+        updateStatus(`❌ Error: ${err.message}`, 'error');
+        updateResults({ error: err.message });
+      }
+    }
+
+    // Test on load
+    window.addEventListener('load', () => {
+      updateStatus('Ready to test', 'info');
+    });
+  </script>
+</body>
+</html>
